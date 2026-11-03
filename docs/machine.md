@@ -22,6 +22,8 @@ After you authenticate once, the connection is reused by the remote shell and by
 - **macOS and Linux:** OpenSSH connection sharing. An idle connection is kept for at least 12 hours while the Host runs.
 - **Windows:** a native SSH client inside the plugin, with no WSL. It reads your Windows OpenSSH configuration and supports key files, the Windows ssh-agent, passwords and 2FA. Connections live until the Host restarts. For ProxyJump, ProxyCommand, certificates or hardware keys, switch to the optional WSL backend described in the [installation guide](../INSTALL.md#install-in-the-desktop-app).
 
+**Keep SSH connections alive** (Machines tab of the DSH-SLOP settings, off by default) runs a no-op command through each ready connection every 30 minutes, so an authenticated connection lasts as long as the Host and network keep it up instead of 12 idle hours. It never signs in: a connection lost to a network drop, sleep or a Host restart stays lost until you reconnect, and 2FA still asks for a code.
+
 Connections are runtime state. After a Host restart you reconnect; saved Machines and Machine Info remain.
 
 ## Shell and transfer

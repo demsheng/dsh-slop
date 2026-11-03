@@ -1,5 +1,19 @@
 # Release notes
 
+## 0.0.16, public preview
+
+Targets DeepSeek Harness **0.2.1-rc.5** exactly; rc.3 is no longer accepted. All DSH package pins move together and no SLOP source change was required. See [upstream](UPSTREAM.md).
+
+A new sidebar **Jobs** page lists Queue jobs from every Chat, with filters, search and grouping by Machine or Chat. It can check a job now, pause and resume checks while a Machine is offline, and edit a job's label, interval, tags, notes and whether it notifies or continues its Chat. It shows the scheduler command to stop a job but never runs it.
+
+**Keep SSH connections alive** (Machines settings, off by default) refreshes each ready connection every 30 minutes so it outlives the 12-hour idle limit. It never starts a sign-in.
+
+Agent behavior gains a seventh preference, *Working files*: it asks the Agent to keep its own helper scripts, dry-run output, logs and backups outside the project (or in one `_agent/` folder) and to edit project files in place rather than leave `_r2`/`.resume` copies. Presets set it too. The behavior preferences now apply to the whole Chat, not only to SLOP tools.
+
+For a controller such as DPDispatcher or DP-GEN the Agent tracks only the controller job and reads child state from the scheduler when asked. Callback instructions moved into the queue-tracking Skill, which shortens the always-loaded prompt.
+
+The Chat header's Machine strip no longer squeezes the title and header controls, and the always-ready local Machine chip is hidden.
+
 ## 0.0.15, first public preview
 
 Targets DeepSeek Harness **0.2.1-rc.3** exactly. An OpenSSH socket directory removed by the OS while the Host keeps running (macOS `/tmp` cleanup, a WSL restart) is now re-created before the next connection instead of failing with `unix_listener: cannot bind to path`.

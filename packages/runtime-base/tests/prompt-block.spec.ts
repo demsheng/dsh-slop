@@ -23,7 +23,7 @@ describe('DSH-SLOP prompt block', () => {
     expect(await names(ctx)).toEqual(['tool:bash', 'slop:block', 'deployment:persona-suffix'])
     const prompt = renderPrompt(await ctx.systemPrompt.assemble({}))
     const block = prompt.slice(prompt.indexOf('<dsh-slop>'), prompt.indexOf('</dsh-slop>'))
-    expect(block).toContain('apply only to its tools (slop_*)')
+    expect(block).toContain('apply to its tools (slop_*)')
     expect(block).toContain("Everything outside this block is the harness's default behavior")
     expect(block.indexOf('Machine rule.')).toBeLessThan(block.indexOf('Queue rule.'))
     expect(prompt.indexOf('Harness shell guidance.')).toBeLessThan(prompt.indexOf('<dsh-slop>'))

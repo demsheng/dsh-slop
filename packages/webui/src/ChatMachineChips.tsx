@@ -43,7 +43,7 @@ function MachineIcon({ scheduled }: { scheduled: boolean }) {
   </svg>
 }
 
-/** Saved targets, never a global current-Machine selector. Connect uses ordinary Chat. */
+/** Saved remote targets, never a global current-Machine selector. Connect uses ordinary Chat. */
 export function ChatMachineChips({ useInput, inputActions, sessionId }: Props): ReactNode {
   const { client, snapshot, state } = useSlopUi()
   const [machines, setMachines] = useState<readonly MachineProjection[]>([])
@@ -60,7 +60,8 @@ export function ChatMachineChips({ useInput, inputActions, sessionId }: Props): 
         const result = await client.call('slop.machine.list', {})
         if (stopped) return
         setNow(Date.now())
-        if (result.ok) { setMachines(result.value); setError(undefined) } else setError(result.error.message)
+        // The local Host is always ready and never needs Connect; only remote targets earn a chip.
+        if (result.ok) { setMachines(result.value.filter(machine => machine.kind !== 'local')); setError(undefined) } else setError(result.error.message)
       } catch { if (!stopped) setError('Machine inventory unavailable.') }
       if (!stopped) timer = setTimeout(() => { void refresh() }, 15_000)
     }

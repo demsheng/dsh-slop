@@ -13,7 +13,7 @@ import { admitLocalRequest, HttpAdmissionError, readJsonBody, writeJson } from '
 
 export const QUEUE_SETTINGS_BRIDGE_PATH = '/dsh-slop/queue-settings'
 
-type QueueSettingsService = Pick<QueueService, 'settings' | 'updateSettings' | 'list' | 'update' | 'probeNow' | 'deliveries'>
+type QueueSettingsService = Pick<QueueService, 'settings' | 'updateSettings' | 'list' | 'update' | 'probeNow' | 'deliveries' | 'observations'>
 
 const chatRefreshSchema = z.object({
   scope: z.literal('chat-refresh'),
@@ -48,6 +48,108 @@ async function chatView(service: QueueSettingsService, sessionId: string) {
     phase: item.phase,
     awaitingVerification: item.callback?.terminalPending === true || item.verificationPending === true,
   }))) }
+}
+
+const JOBS_HISTORY_MS = 7 * 24 * 60 * 60 * 1_000
+const JOBS_BATCH_LIMIT = 50
+const JOB_HISTORY_LIMIT = 50
+
+const jobIdsSchema = z.array(z.string().min(1).max(128)).min(1).max(JOBS_BATCH_LIMIT)
+const jobsActionSchema = z.object({
+  scope: z.literal('jobs-action'),
+  action: z.enum(['check', 'pause', 'resume']),
+  ids: jobIdsSchema,
+}).strict()
+const jobsEditSchema = z.object({
+  scope: z.literal('jobs-edit'),
+  id: z.string().min(1).max(128),
+  expectedRevision: z.number().int().positive(),
+  label: z.string().trim().min(1).max(256).optional(),
+  tags: z.array(z.string().trim().min(1).max(128)).max(32).optional(),
+  notes: z.string().trim().max(4_096).nullable().optional(),
+  purpose: queuePurposeSchema.optional(),
+  continuation: z.string().trim().min(1).max(4_096).optional(),
+  userIntervalSeconds: z.number().int().min(60).nullable().optional(),
+}).strict()
+
+/** A live item with no scheduled check is paused: the planner skips it until a check or resume. */
+function isPaused(item: QueueItem): boolean {
+  return !isTerminalState(item.state) && item.nextCheckAt === undefined
+}
+
+/** Every active item plus terminal items from the last week, across Chats. */
+async function jobsView(service: QueueSettingsService, failures: readonly { id: string; error: string }[] = []) {
+  const cutoff = Date.now() - JOBS_HISTORY_MS
+  const [settings, all] = await Promise.all([service.settings(), service.list()])
+  const items = all
+    .filter(item => !isTerminalState(item.state) || Date.parse(item.updatedAt) >= cutoff)
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || a.id.localeCompare(b.id))
+  return { schemaVersion: 1, failures, items: await Promise.all(items.map(async item => ({
+    ...await continuationView(service, item),
+    id: item.id, label: item.label, state: item.state, target: item.target, tags: item.tags, notes: item.notes, revision: item.revision,
+    observerId: item.observer.kind === 'process' ? String(item.observer.handle.pid) : item.observer.jobId,
+    observerKind: item.observer.kind,
+    sessionId: item.attention.primary.sessionId,
+    cwd: item.attention.primary.cwd,
+    paused: isPaused(item),
+    observedAt: item.lastObservation?.observedAt,
+    elapsedSeconds: item.lastObservation?.elapsedSeconds,
+    walltimeSeconds: item.lastObservation?.walltimeSeconds,
+    walltimeRemainingSeconds: item.lastObservation?.walltimeRemainingSeconds,
+    expectedRemainingSeconds: item.lastObservation?.expectedRemainingSeconds,
+    attentionMessage: item.lastObservation?.attention?.message,
+    evidence: item.lastObservation?.evidence,
+    nextCheckAt: item.nextCheckAt,
+    nextCheckReason: describeNextCheck(item, settings),
+    userIntervalSeconds: item.monitoring.userIntervalSeconds,
+    consecutiveFailures: item.consecutiveFailures,
+    checkError: item.lastCheckError?.message,
+    observationSource: item.lastObservation?.source,
+    startedAt: item.startedAt,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    phase: item.phase,
+    awaitingVerification: item.callback?.terminalPending === true || item.verificationPending === true,
+  }))) }
+}
+
+/** Observation history for one item, newest first; reading never probes. */
+async function jobHistoryView(service: QueueSettingsService, id: string) {
+  const item = (await service.list()).find(entry => entry.id === id)
+  if (item === undefined) throw new HttpAdmissionError(404, 'Queue item not found')
+  const observations = [...await service.observations(id)]
+    .sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt))
+    .slice(0, JOB_HISTORY_LIMIT)
+  return { schemaVersion: 1, id, observations: observations.map(observation => ({
+    state: observation.state, observedAt: observation.observedAt, source: observation.source,
+    elapsedSeconds: observation.elapsedSeconds, phase: observation.phase,
+    evidence: observation.evidence.slice(0, 2_000),
+  })) }
+}
+
+async function applyJobsAction(service: QueueSettingsService, action: 'check' | 'pause' | 'resume', ids: readonly string[]) {
+  const items = new Map((await service.list()).map(item => [item.id as string, item]))
+  const failures: { id: string; error: string }[] = []
+  // Sequential: probes of one Machine share its connection, and the service serializes runs anyway.
+  for (const id of new Set(ids)) {
+    const item = items.get(id)
+    try {
+      if (item === undefined) throw new Error('Queue item not found')
+      if (action === 'check') {
+        const started = Date.now()
+        const checked = await service.probeNow(id)
+        // A failed probe is recorded on the item rather than thrown.
+        const failure = checked.lastCheckError
+        if (failure !== undefined && Date.parse(failure.at) >= started) throw new Error(failure.message)
+      }
+      else if (isTerminalState(item.state)) throw new Error('Finished jobs have no scheduled checks')
+      else if (action === 'pause') { if (!isPaused(item)) await service.update(id, { nextCheckAt: null }, item.revision) }
+      else if (isPaused(item)) await service.update(id, { nextCheckAt: new Date(Date.now()).toISOString() }, item.revision)
+    } catch (error) {
+      failures.push({ id, error: error instanceof Error ? error.message : 'Queue action failed' })
+    }
+  }
+  return failures
 }
 
 function belongsToChat(item: Awaited<ReturnType<QueueSettingsService['list']>>[number], sessionId: string): boolean {
@@ -151,6 +253,17 @@ export async function serveQueueSettingsBridge(
       writeJson(response, 200, await chatView(service, sessionId))
       return
     }
+    if (request.method === 'GET' && url.searchParams.get('view') === 'jobs') {
+      if ([...url.searchParams.keys()].length !== 1) throw new HttpAdmissionError(400, 'query parameters are not allowed')
+      writeJson(response, 200, await jobsView(service))
+      return
+    }
+    if (request.method === 'GET' && url.searchParams.get('view') === 'job') {
+      const id = url.searchParams.get('id')
+      if (!id || id.length > 128 || [...url.searchParams.keys()].length !== 2) throw new HttpAdmissionError(400, 'one Queue item id is required')
+      writeJson(response, 200, await jobHistoryView(service, id))
+      return
+    }
     if (url.search !== '') {
       throw new HttpAdmissionError(400, 'query parameters are not allowed')
     }
@@ -167,6 +280,32 @@ export async function serveQueueSettingsBridge(
       await service.probeNow(current.id)
       await monitor.refresh()
       writeJson(response, 200, await chatView(service, refresh.data.sessionId))
+      return
+    }
+    const jobsAction = jobsActionSchema.safeParse(raw)
+    if (jobsAction.success) {
+      const failures = await applyJobsAction(service, jobsAction.data.action, jobsAction.data.ids)
+      await monitor.refresh()
+      writeJson(response, 200, await jobsView(service, failures))
+      return
+    }
+    const jobsEdit = jobsEditSchema.safeParse(raw)
+    if (jobsEdit.success) {
+      const edit = jobsEdit.data
+      const current = (await service.list()).find(entry => entry.id === edit.id)
+      if (current === undefined) throw new HttpAdmissionError(404, 'Queue item not found')
+      await service.update(edit.id, {
+        ...(edit.label === undefined ? {} : { label: edit.label }),
+        ...(edit.tags === undefined ? {} : { tags: edit.tags }),
+        ...(edit.notes === undefined ? {} : { notes: edit.notes === null || edit.notes === '' ? null : edit.notes }),
+        ...(edit.purpose === undefined ? {} : { purpose: edit.purpose }),
+        ...(edit.continuation === undefined ? {} : { continuation: edit.continuation }),
+        ...(edit.userIntervalSeconds === undefined ? {} : { monitoring: { ...current.monitoring, userIntervalSeconds: edit.userIntervalSeconds ?? undefined } }),
+        // A monitoring change reschedules the item; keep a paused job paused.
+        ...(edit.userIntervalSeconds !== undefined && isPaused(current) ? { nextCheckAt: null } : {}),
+      }, edit.expectedRevision)
+      await monitor.refresh()
+      writeJson(response, 200, await jobsView(service))
       return
     }
     const global = globalUpdateSchema.safeParse(raw)

@@ -92,7 +92,7 @@ export function apply(ctx) {
     process.stdout.write(receipt)
   }
   const packaged = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'))
-  assert.equal(packaged.peerDependencies['@deepseek-ai/dsh-tools'], '0.2.1-rc.3')
+  assert.equal(packaged.peerDependencies['@deepseek-ai/dsh-tools'], '0.2.1-rc.5')
   assert(packaged.bundledDependencies.includes('ssh2'), 'Native SSH must be bundled without lifecycle build requirements')
   for (const name of packaged.bundledDependencies) {
     const component = JSON.parse(await readFile(join(installed, 'node_modules', name, 'package.json'), 'utf8'))
@@ -108,7 +108,7 @@ export function apply(ctx) {
     assert.match(name, /^\.\/node_modules\/@dsh-slop\/[a-z-]+\/[\w/.-]+\.js$/u, `Component ${name} must use an anchored relative path`)
     await readFile(join(installed, name))
   }
-  assert.equal(packaged.engines.dsh, '0.2.1-rc.3')
+  assert.equal(packaged.engines.dsh, '0.2.1-rc.5')
   const sshPackage = JSON.parse(await readFile(join(installed, 'node_modules/ssh2/package.json'), 'utf8'))
   assert.equal(sshPackage.version, '1.17.0')
   assert.equal(sshPackage.optionalDependencies, undefined, 'The native SSH backend must run without C++ addons')

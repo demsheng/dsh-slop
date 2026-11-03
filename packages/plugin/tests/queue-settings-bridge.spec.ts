@@ -52,6 +52,10 @@ function backend() {
     deliveries: vi.fn(async () => []),
     update: vi.fn(async () => item),
     probeNow: vi.fn(async () => item),
+    observations: vi.fn(async () => [
+      { queueItemId: item.id, state: 'queued', observedAt: '2026-09-03T11:00:00.000Z', evidence: 'PENDING', source: 'code' },
+      { queueItemId: item.id, state: 'running', observedAt: '2026-09-03T12:01:00.000Z', evidence: 'x'.repeat(5_000), source: 'code' },
+    ]),
   }
 }
 
@@ -131,6 +135,136 @@ describe('Queue settings bridge', () => {
 
   it('requires the nonce for the read-only Chat view', async () => {
     const req = request('GET'); req.url += '?view=chat&sessionId=chat'; delete req.headers['x-dsh-slop-csrf']
+    const output = response()
+    await serveQueueSettingsBridge(req, output.value, nonce, backend(), { refresh: vi.fn(async () => {}) }, [authority])
+    expect(output.read().status).toBe(403)
+  })
+
+  it('lists active jobs across Chats and only last-week terminal jobs without probing', async () => {
+    const service = backend()
+    const [base] = await service.list()
+    if (base === undefined) throw new Error('fixture missing')
+    const week = now - 7 * 24 * 60 * 60 * 1_000
+    service.list.mockResolvedValue([
+      { ...base, id: queueItemSchema.shape.id.parse('old-done'), state: 'completed', updatedAt: new Date(week - 1).toISOString() },
+      { ...base, id: queueItemSchema.shape.id.parse('old-running'), updatedAt: new Date(week - 86400000).toISOString(), attention: { ...base.attention, primary: { ...base.attention.primary, sessionId: 'other' } } },
+      { ...base, id: queueItemSchema.shape.id.parse('recent-failed'), state: 'failed', updatedAt: new Date(week + 1).toISOString() },
+    ])
+    const req = request('GET'); req.url += '?view=jobs'
+    const output = response()
+    const monitor = { refresh: vi.fn(async () => {}) }
+    await serveQueueSettingsBridge(req, output.value, nonce, service, monitor, [authority])
+    expect(output.read()).toMatchObject({ status: 200, body: { schemaVersion: 1, items: [
+      { id: 'recent-failed', state: 'failed', sessionId: 'chat' },
+      { id: 'old-running', state: 'running', sessionId: 'other', observerKind: 'slurm', observerId: '123', checkError: 'probe timed out' },
+    ] } })
+    expect((output.read().body as { items: unknown[] }).items).toHaveLength(2)
+    expect(service.probeNow).not.toHaveBeenCalled()
+    expect(monitor.refresh).not.toHaveBeenCalled()
+  })
+
+  it('checks several jobs and reports per-item failures without stopping', async () => {
+    const service = backend()
+    const [base] = await service.list()
+    if (base === undefined) throw new Error('fixture missing')
+    service.probeNow.mockResolvedValue({ ...base, lastCheckError: undefined })
+    const monitor = { refresh: vi.fn(async () => {}) }
+    const output = response()
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-action', action: 'check', ids: ['job-1', 'nope', 'job-1'] }), output.value, nonce, service, monitor, [authority])
+    expect(output.read()).toMatchObject({ status: 200, body: { failures: [{ id: 'nope', error: 'Queue item not found' }], items: [{ id: 'job-1' }] } })
+    expect(service.probeNow).toHaveBeenCalledTimes(1)
+    expect(monitor.refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports a check whose probe recorded a new error as failed', async () => {
+    const service = backend()
+    const [base] = await service.list()
+    if (base === undefined) throw new Error('fixture missing')
+    service.probeNow.mockResolvedValue({ ...base, lastCheckError: { at: new Date(now).toISOString(), message: 'AUTH_REQUIRED: Human authentication is required.' } })
+    const output = response()
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-action', action: 'check', ids: ['job-1'] }), output.value, nonce, service, { refresh: vi.fn(async () => {}) }, [authority])
+    expect(output.read()).toMatchObject({ body: { failures: [{ id: 'job-1', error: 'AUTH_REQUIRED: Human authentication is required.' }] } })
+    service.probeNow.mockResolvedValue({ ...base, lastCheckError: { at: new Date(now - 60_000).toISOString(), message: 'old' } })
+    const stale = response()
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-action', action: 'check', ids: ['job-1'] }), stale.value, nonce, service, { refresh: vi.fn(async () => {}) }, [authority])
+    expect(stale.read()).toMatchObject({ body: { failures: [] } })
+  })
+
+  it('pauses by clearing the next check, resumes by scheduling it now, and refuses finished jobs', async () => {
+    const service = backend()
+    const [base] = await service.list()
+    if (base === undefined) throw new Error('fixture missing')
+    const monitor = { refresh: vi.fn(async () => {}) }
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-action', action: 'pause', ids: ['job-1'] }), response().value, nonce, service, monitor, [authority])
+    expect(service.update).toHaveBeenLastCalledWith('job-1', { nextCheckAt: null }, base.revision)
+    service.list.mockResolvedValue([{ ...base, nextCheckAt: undefined }])
+    const paused = response()
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-action', action: 'resume', ids: ['job-1'] }), paused.value, nonce, service, monitor, [authority])
+    expect(service.update).toHaveBeenLastCalledWith('job-1', { nextCheckAt: new Date(now).toISOString() }, base.revision)
+    expect(paused.read()).toMatchObject({ body: { items: [{ id: 'job-1', paused: true }] } })
+    service.list.mockResolvedValue([{ ...base, state: 'completed', nextCheckAt: undefined }])
+    const done = response()
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-action', action: 'pause', ids: ['job-1'] }), done.value, nonce, service, monitor, [authority])
+    expect(done.read()).toMatchObject({ body: { failures: [{ id: 'job-1', error: 'Finished jobs have no scheduled checks' }], items: [{ paused: false }] } })
+    expect(service.update).toHaveBeenCalledTimes(2)
+  })
+
+  it('edits label, tags, notes, purpose and interval with the expected revision', async () => {
+    const service = backend()
+    const output = response()
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-edit', id: 'job-1', expectedRevision: 1, label: ' HZO iter3 ', tags: ['HZO'], notes: '', purpose: 'continue', continuation: 'Run analysis.py on iter.000003', userIntervalSeconds: 600 }), output.value, nonce, service, { refresh: vi.fn(async () => {}) }, [authority])
+    expect(output.read().status).toBe(200)
+    expect(service.update).toHaveBeenCalledWith('job-1', { label: 'HZO iter3', tags: ['HZO'], notes: null, purpose: 'continue', continuation: 'Run analysis.py on iter.000003', monitoring: { userIntervalSeconds: 600 } }, 1)
+  })
+
+  it('keeps a paused job paused when its interval changes', async () => {
+    const service = backend()
+    const [base] = await service.list()
+    if (base === undefined) throw new Error('fixture missing')
+    service.list.mockResolvedValue([{ ...base, nextCheckAt: undefined }])
+    await serveQueueSettingsBridge(request('PUT', { scope: 'jobs-edit', id: 'job-1', expectedRevision: 1, userIntervalSeconds: 1800 }), response().value, nonce, service, { refresh: vi.fn(async () => {}) }, [authority])
+    expect(service.update).toHaveBeenCalledWith('job-1', { monitoring: { userIntervalSeconds: 1800 }, nextCheckAt: null }, 1)
+  })
+
+  it.each([
+    { scope: 'jobs-action', action: 'cancel', ids: ['job-1'] },
+    { scope: 'jobs-action', action: 'check', ids: [] },
+    { scope: 'jobs-action', action: 'check', ids: Array.from({ length: 51 }, (_, index) => `j${index}`) },
+    { scope: 'jobs-edit', id: 'job-1', expectedRevision: 1, userIntervalSeconds: 30 },
+    { scope: 'jobs-edit', id: 'job-1', expectedRevision: 1, state: 'completed' },
+  ])('rejects unsupported Jobs requests %#', async body => {
+    const service = backend()
+    const output = response()
+    await serveQueueSettingsBridge(request('PUT', body), output.value, nonce, service, { refresh: vi.fn(async () => {}) }, [authority])
+    expect(output.read().status).toBe(400)
+    expect(service.probeNow).not.toHaveBeenCalled()
+    expect(service.update).not.toHaveBeenCalled()
+  })
+
+  it('returns bounded newest-first observation history without probing', async () => {
+    const service = backend()
+    const req = request('GET'); req.url += '?view=job&id=job-1'
+    const output = response()
+    await serveQueueSettingsBridge(req, output.value, nonce, service, { refresh: vi.fn(async () => {}) }, [authority])
+    const body = output.read().body as { observations: { state: string; evidence: string }[] }
+    expect(body.observations.map(row => row.state)).toEqual(['running', 'queued'])
+    expect(body.observations[0]?.evidence).toHaveLength(2_000)
+    expect(service.probeNow).not.toHaveBeenCalled()
+    const missing = request('GET'); missing.url += '?view=job&id=nope'
+    const missingOutput = response()
+    await serveQueueSettingsBridge(missing, missingOutput.value, nonce, service, { refresh: vi.fn(async () => {}) }, [authority])
+    expect(missingOutput.read().status).toBe(404)
+  })
+
+  it.each(['?view=jobs&x=1', '?view=jobs&sessionId=chat', '?view=job', '?view=job&id=job-1&x=1'])('rejects extra Jobs selectors %s', async query => {
+    const req = request('GET'); req.url += query
+    const output = response()
+    await serveQueueSettingsBridge(req, output.value, nonce, backend(), { refresh: vi.fn(async () => {}) }, [authority])
+    expect(output.read().status).toBe(400)
+  })
+
+  it('requires the nonce for the Jobs view', async () => {
+    const req = request('GET'); req.url += '?view=jobs'; delete req.headers['x-dsh-slop-csrf']
     const output = response()
     await serveQueueSettingsBridge(req, output.value, nonce, backend(), { refresh: vi.fn(async () => {}) }, [authority])
     expect(output.read().status).toBe(403)

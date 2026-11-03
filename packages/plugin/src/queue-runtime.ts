@@ -42,8 +42,6 @@ const OBSERVATION_OUTPUT_SCHEMA: ObjectJsonSchema = {
           evidence: { type: 'string' },
           elapsedSeconds: { type: 'number' },
           expectedRemainingSeconds: { type: 'number' },
-          recommendedCheckAfterSeconds: { type: 'integer' },
-          recommendationReason: { type: 'string' },
         },
         required: ['queueItemId', 'state', 'observedAt', 'evidence'],
         additionalProperties: false,

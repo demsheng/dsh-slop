@@ -47,12 +47,12 @@
     "typescript": "6.0.3",
     "vitest": "4.1.8",
     "yaml": "2.9.0",
-    "@deepseek-ai/dsh-plugin-market-index": "0.2.1-rc.3",
-    "@deepseek-ai/dsh-working-directory": "0.2.1-rc.3",
-    "@deepseek-ai/dsh-ptc-runtime-node": "0.2.1-rc.3",
-    "@deepseek-ai/dsh-experimental-worktree": "0.2.1-rc.3"
+    "@deepseek-ai/dsh-plugin-market-index": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-working-directory": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-ptc-runtime-node": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-experimental-worktree": "0.2.1-rc.5"
   },
   "dependencies": {
-    "@deepseek-ai/dsh": "0.2.1-rc.3"
+    "@deepseek-ai/dsh": "0.2.1-rc.5"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@dsh-slop/bundle",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "private": true,
   "type": "module",
   "exports": {
@@ -18,7 +18,7 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/dsh-web-app": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-web-app": "0.2.1-rc.5",
     "@dsh-slop/knowledge": "workspace:*",
     "@dsh-slop/plugin": "workspace:*",
     "@dsh-slop/ui": "workspace:*",
@@ -30,6 +30,6 @@
   },
   "description": "Machine, Knowledge, Queue and optional public callbacks.",
   "engines": {
-    "dsh": "0.2.1-rc.3"
+    "dsh": "0.2.1-rc.5"
   }
 }

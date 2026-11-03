@@ -54,6 +54,10 @@ export class NativeSshBroker implements SshBroker {
     return connection === undefined ? { state: 'disconnected' } : { state: connection.state, identityDigest: connection.identityDigest, ...(connection.message === undefined ? {} : { message: connection.message }) }
   }
 
+  readyMachineIds(): readonly MachineId[] {
+    return [...this.connections].filter(([, connection]) => connection.state === 'ready').map(([id]) => id)
+  }
+
   async reconcileStatus(machineId: MachineId, signal?: AbortSignal): Promise<ReturnType<OpenSshBroker['status']>> {
     signal?.throwIfAborted()
     const profile = await this.profiles.get(machineId)

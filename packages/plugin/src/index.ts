@@ -1,9 +1,10 @@
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { resolve } from 'node:path'
-import { Service, type Context } from '@deepseek-ai/cordis'
+import { Service, type Context, type Volatile } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-commands'
-import { Config, validateConfig } from '@dsh-slop/runtime-base'
-export { Config } from '@dsh-slop/runtime-base'
+import type {} from '@deepseek-ai/dsh-settings'
+import z from '@deepseek-ai/schemastery'
+import { Config as SharedConfig, validateConfig } from '@dsh-slop/runtime-base'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import {
   asPrincipalId,
@@ -44,6 +45,15 @@ declare module '@deepseek-ai/cordis' {
 
 export const name = 'slop-machine'
 export const inject = ['slopRuntime', 'webServer', 'subprocess', 'agents', 'tools', 'systemPrompt', 'commands', 'skills']
+
+export interface Config extends SharedConfig {
+  readonly keepConnectionsAlive: Volatile<boolean>
+}
+/** The Machine entry owns connection renewal; the shared fields stay defined in runtime-base. */
+export const Config = z.object({
+  ...SharedConfig.dict,
+  keepConnectionsAlive: z.boolean().default(false).volatile().description('Renew authenticated SSH connections every 30 minutes while the Host runs so they do not expire when idle. A dropped connection still needs the user to reconnect.'),
+}) as unknown as z<Config>
 
 interface SlopHostApiConfig {
   readonly trustedBrowserHosts: readonly string[]
@@ -162,6 +172,8 @@ export class SlopHostApi extends TypertRemoteService {
 /** Install Machine operations and their scoped execution port. */
 export async function apply(ctx: Context, config: Config): Promise<void> {
   const productHome = validateConfig(config)
+  // The Machine settings tab renders its own controls, so the host must not generate a page.
+  ctx.inject(['settings'], scoped => { scoped.effect(() => scoped.settings.configure({ auto: false }, ctx.fiber)) })
   registerCapabilitySkills(ctx, 'machine')
   ctx.effect(() => registerSetupMachineCommand(ctx))
   ctx.effect(() => registerSetupMachineTool(ctx))
@@ -191,6 +203,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       cwd: productHome,
       authority,
       subprocess: hostContext.subprocess,
+      keepConnectionsAlive: () => config.keepConnectionsAlive.get(),
     })
     const inventory = new InventoryService(authority)
     machineApplication = new MachineApplication({

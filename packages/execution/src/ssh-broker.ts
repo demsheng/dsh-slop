@@ -190,6 +190,11 @@ export class OpenSshBroker {
    * triggering authentication. This makes a surviving master visible after a
    * host restart and detects a master that exited after the last observation.
    */
+  /** Machines whose connection this Host currently believes is authenticated. */
+  readyMachineIds(): readonly MachineId[] {
+    return [...this.connections].filter(([, connection]) => connection.state === 'ready').map(([id]) => id)
+  }
+
   async reconcileStatus(machineIdInput: MachineId, signal?: AbortSignal): Promise<Readonly<{ state: ConnectionState; identityDigest?: Sha256; message?: string }>> {
     const machineId = machineIdSchema.parse(machineIdInput)
     const profile = await this.profiles.get(machineId)

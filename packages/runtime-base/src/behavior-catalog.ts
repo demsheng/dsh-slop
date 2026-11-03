@@ -1,5 +1,5 @@
 /**
- * The Agent behavior catalog: six traits, each with a few levels, each level
+ * The Agent behavior catalog: seven traits, each with a few levels, each level
  * one short paragraph of system-prompt text that the user may edit. This file
  * is pure data plus pure functions so the Host and the browser share one copy.
  *
@@ -7,7 +7,7 @@
  * preamble says so in the prompt itself.
  */
 
-export type BehaviorTraitId = 'followThrough' | 'errors' | 'verification' | 'checking' | 'scope' | 'reporting'
+export type BehaviorTraitId = 'followThrough' | 'errors' | 'verification' | 'checking' | 'scope' | 'workingFiles' | 'reporting'
 
 export interface BehaviorLevel {
   readonly id: string
@@ -157,6 +157,26 @@ export const BEHAVIOR_TRAITS: readonly BehaviorTrait[] = [
     ],
   },
   {
+    id: 'workingFiles',
+    label: 'Working files',
+    description: 'Where an Agent keeps its own helper scripts, checks, dry-run outputs, logs and backups.',
+    defaultLevel: 'outside',
+    levels: [
+      {
+        id: 'outside',
+        label: 'Outside the project',
+        description: 'Keep my project and run directories as I would leave them. Working files go to scratch, and what the Agent added is cleaned up.',
+        text: 'Working files: keep your own working files (helper and check scripts, dry-run or review outputs, setup logs, backups, hash or provenance files) outside project and run directories. On a Machine use its Scratch path from Machine Info, or ~/.slop-scratch/<task> when none is set; on the Host use one task folder in the system temporary directory. Run helpers from there against the project path. Edit project files in place under their existing names, never as _r2, .resume2, .bak, _new or dated copies; keep any original you need in the working location. Never remove or rename files that existed before your work. Before reporting, remove the working files you created inside the project unless the user asked to keep them, and list what you added there.',
+      },
+      {
+        id: 'folder',
+        label: 'One Agent folder',
+        description: 'Keep working files next to the work, in one _agent/ folder per project or run directory, so I can inspect them later.',
+        text: 'Working files: keep your own working files (helper and check scripts, dry-run or review outputs, setup logs, backups, hash or provenance files) in one _agent/ folder inside the project or run directory, never beside the user\'s files. Edit project files in place under their existing names, never as _r2, .resume2, .bak, _new or dated copies; keep any original you need in _agent/. Never remove or rename files that existed before your work. When reporting, list what you added to the project and to _agent/.',
+      },
+    ],
+  },
+  {
     id: 'reporting',
     label: 'Reporting',
     description: 'How much an Agent narrates while it works.',
@@ -204,7 +224,7 @@ export const BEHAVIOR_PRESETS: readonly BehaviorPreset[] = [
     id: 'careful',
     label: 'Careful',
     description: 'Ask before each step, stop on errors, test before every real run, verify before relying on anything.',
-    levels: { followThrough: 'confirm', errors: 'stop', verification: 'always', checking: 'thorough', scope: 'strict', reporting: 'standard' },
+    levels: { followThrough: 'confirm', errors: 'stop', verification: 'always', checking: 'thorough', scope: 'strict', workingFiles: 'outside', reporting: 'standard' },
   },
   {
     id: 'balanced',
@@ -216,7 +236,7 @@ export const BEHAVIOR_PRESETS: readonly BehaviorPreset[] = [
     id: 'autopilot',
     label: 'Autopilot',
     description: 'Keep going to the goal, resolve errors, report at the end.',
-    levels: { followThrough: 'autonomous', errors: 'resolve', verification: 'when-new', checking: 'proportionate', scope: 'strict', reporting: 'brief' },
+    levels: { followThrough: 'autonomous', errors: 'resolve', verification: 'when-new', checking: 'proportionate', scope: 'strict', workingFiles: 'outside', reporting: 'brief' },
   },
 ]
 

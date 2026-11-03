@@ -13,10 +13,10 @@ import { composeProfileManifest } from './profile-manifest.js'
 import { prepareLegacyKnowledgeSettings } from './legacy-settings.js'
 
 /** Exact upstream release this launcher accepts. */
-export const DSH_VERSION = '0.2.1-rc.3'
+export const DSH_VERSION = '0.2.1-rc.5'
 
 /** Exact upstream source revision used to produce the supported DSH release. */
-export const DSH_UPSTREAM_COMMIT = '1f81c047fc48fa190a683e469daa699857e9afe8'
+export const DSH_UPSTREAM_COMMIT = 'b830ec950faba0a46dda564be3e2d854afed94f1'
 
 /** Product version included in diagnostics and backup metadata. */
 export const PRODUCT_VERSION = '0.0.1'

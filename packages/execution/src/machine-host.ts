@@ -22,6 +22,7 @@ import { MachineTransferService } from './machine-transfer-service.ts'
 import { DshProcessDriver } from './process-driver.ts'
 import { OpenSshBroker } from './ssh-broker.ts'
 import { SshPlatform } from './ssh-platform.ts'
+import { renewReadyConnections, SSH_KEEPALIVE_INTERVAL_MS } from './ssh-keepalive.ts'
 import { sshBackend } from './ssh-backend.ts'
 import { NativeSshBroker, type SshBroker } from './native-ssh-broker.ts'
 import { NativeAuthFlow } from './native-auth-flow.ts'
@@ -98,6 +99,8 @@ export interface CreateMachineHostOptions {
   readonly cwd: string
   readonly authority: RelationalAuthority
   readonly subprocess: SubprocessRuntime
+  /** Read at each interval; true renews already-authenticated masters so they do not idle out. */
+  readonly keepConnectionsAlive?: () => boolean
 }
 
 export interface MachineHost {
@@ -171,6 +174,14 @@ export async function createMachineHost(options: CreateMachineHostOptions): Prom
     prepareCommand: sshPlatform.prepareCommand,
     ...(native === undefined ? {} : { nativeTransfer: nativeSftpTransfer(native) }),
   })
+  const keepAlive = new AbortController()
+  let renewing = false
+  const keepAliveTimer = setInterval(() => {
+    if (renewing || options.keepConnectionsAlive?.() !== true) return
+    renewing = true
+    void renewReadyConnections(broker, keepAlive.signal).finally(() => { renewing = false })
+  }, SSH_KEEPALIVE_INTERVAL_MS)
+  keepAliveTimer.unref()
   let closed = false
   return {
     broker,
@@ -181,6 +192,8 @@ export async function createMachineHost(options: CreateMachineHostOptions): Prom
     async close() {
       if (closed) return
       closed = true
+      clearInterval(keepAliveTimer)
+      keepAlive.abort()
       connectionRuntime.close()
       await Promise.all([machineTransferService.close(), dshAuth.close(), processDriver.stopActive()])
       await broker.close()

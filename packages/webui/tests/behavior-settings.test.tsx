@@ -83,7 +83,7 @@ describe('Agent behavior settings', () => {
     await select(/^Errors/u)
 
     const toggles = screen.getAllByRole('button', { name: /Edit prompt text/u })
-    expect(toggles).toHaveLength(6)
+    expect(toggles).toHaveLength(7)
     fireEvent.click(toggles[1] as HTMLElement)
     expect(screen.getByText(behaviorTrait('errors').description)).toBeDefined()
     const editor = screen.getByLabelText<HTMLTextAreaElement>(/Errors prompt text/u)
@@ -122,7 +122,7 @@ describe('Agent behavior settings', () => {
     const save = vi.fn(async (patch: BehaviorSettingsPatch, revision: number): Promise<BehaviorSettingsView> => ({ ...edited, overrides: patch.promptOverrides ?? {}, revision: revision + 1 }))
     render(<BehaviorSettings source={{ load: async () => edited, save }} />)
 
-    fireEvent.click((await screen.findAllByRole('button', { name: /Edit prompt text/u }))[5] as HTMLElement)
+    fireEvent.click((await screen.findAllByRole('button', { name: /Edit prompt text/u }))[6] as HTMLElement)
     fireEvent.change(screen.getByLabelText(/Reporting prompt text/u), { target: { value: '   ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save text' }))
 
@@ -158,7 +158,7 @@ describe('settings Remote source', () => {
     const value = { followThrough: 'confirm', errors: 'resolve', verification: 'always', checking: 'lean', scope: 'improve', reporting: 'brief', promptOverrides: { 'errors.resolve': 'Fix it.' } }
     const source = createBehaviorSettingsSource({ describe: async () => described(value), update: vi.fn() })
     await expect(source.load()).resolves.toEqual({
-      levels: { followThrough: 'confirm', errors: 'resolve', verification: 'always', checking: 'lean', scope: 'improve', reporting: 'brief' },
+      levels: { followThrough: 'confirm', errors: 'resolve', verification: 'always', checking: 'lean', scope: 'improve', workingFiles: 'outside', reporting: 'brief' },
       overrides: { 'errors.resolve': 'Fix it.' },
       revision: 7,
       writable: true,

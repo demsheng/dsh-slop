@@ -19,7 +19,7 @@ const CUSTOM_PRESET = 'custom'
 const TRAIT_GROUPS = [
   { label: 'Execution', traits: ['followThrough', 'errors'] },
   { label: 'Verification', traits: ['verification', 'checking'] },
-  { label: 'Scope and communication', traits: ['scope', 'reporting'] },
+  { label: 'Scope and communication', traits: ['scope', 'workingFiles', 'reporting'] },
 ] as const satisfies readonly { label: string; traits: readonly BehaviorTraitId[] }[]
 
 export interface BehaviorSettingsView {
@@ -106,7 +106,7 @@ export function BehaviorSettings({ source }: { source: BehaviorSettingsSource })
             if (chosen !== undefined && chosen.id !== preset?.id) void save({ ...chosen.levels }, 'Saved. New sessions will use this preset.')
           }}
         />
-        <p className="slop-behavior-preset-hint">Sets all six preferences. Adjust individual choices below.</p>
+        <p className="slop-behavior-preset-hint">Sets all seven preferences. Adjust individual choices below.</p>
       </div>
       {TRAIT_GROUPS.map(group => <fieldset key={group.label} className="slop-behavior-group">
         <legend>{group.label}</legend>

@@ -31,15 +31,15 @@ When reusing or adapting a workflow, read references/reuse.md before writing fil
 
 Make the smallest authorized adaptation, run the checks needed for the requested result, and stop when those checks and the requested work are complete.
 
-Use references/transfer.md only for a file transfer, and preserve existing files and partial data throughout the operation.
+Use references/transfer.md only for a file transfer. Preserve pre-existing files and partial data; your files follow the Working files preference.
 
 For an explicit project-identity correction, read references/identity-correction.md and reuse existing evidence before gathering new remote facts.
 
-Persist only a useful reusable delta through the Knowledge tools, retain required privacy and digest safeguards, and report each successful write receipt.
+Persist only a useful reusable delta through the Knowledge tools, retain required privacy and digest safeguards, and report each write receipt in chat, not as a file.
 
 Track accepted submissions with Queue and report meaningful changes without repeated healthy checks or extra work added solely to fill waiting time.
 
-If an asynchronous job blocks later steps already requested by the user, load `queue-tracking` and register `purpose: "continue"` with the authorized next step and result paths in `continuation` before ending the turn. Verify the returned settings; a pending Todo or notes alone cannot resume an idle Chat. Resume only the authorized steps, checking existing submission receipts first.
+If an asynchronous job blocks later steps already requested by the user, load `queue-tracking` and register `purpose: "continue"` with the authorized next step and result paths in `continuation` before ending the turn. Verify the returned settings; a pending Todo or notes alone cannot resume an idle Chat. Resume only the authorized steps, checking Queue and the scheduler first.
 
 For a stale tracked status, use `slop_queue_update` with `check-now` instead of writing a scheduler parser. Filter Queue lists by the relevant Machine, state, or current Chat and request only the rows needed.
 

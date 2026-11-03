@@ -27,6 +27,10 @@ Each item has its own next check. Checks come often right after submission and s
 
 The Queue tab of the DSH-SLOP settings has Normal, Economy and Custom profiles, per-item overrides, and an optional separate model for the short fallback check worker. The composer shows a compact summary of this Chat's jobs, with an inline table and a refresh button.
 
+The sidebar **Jobs** page lists jobs from every Chat: active ones, and finished ones from the last seven days. Filter by Active, Needs attention, Finished or All, search, and group by Machine or Chat. From there you can check a job now, pause and resume its checks while a Machine is offline, rename it, change its interval, tags and notes, switch between notifying and continuing the Chat, and read its history. Queue still never submits, cancels or retries a job; the page shows the scheduler command for you to run.
+
+When a controller such as DPDispatcher or DP-GEN submits its own child jobs, the Agent tracks the controller only, and reads child state from the scheduler when you ask about it.
+
 ## Notices
 
 When a job changes state, the owning Chat and any Chat that explicitly subscribed get a compact Job update. Unchanged healthy checks stay silent. Failed deliveries are kept and retried, including across a Host restart. An update to one job never wakes an unrelated Chat.

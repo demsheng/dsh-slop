@@ -17,9 +17,9 @@
     "prepack": "pnpm run build"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-subprocess": "0.2.1-rc.3"
+    "@deepseek-ai/dsh-subprocess": "0.2.1-rc.5"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-subprocess": "0.2.1-rc.3"
+    "@deepseek-ai/dsh-subprocess": "0.2.1-rc.5"
   }
 }

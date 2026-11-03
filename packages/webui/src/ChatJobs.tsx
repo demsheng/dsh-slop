@@ -9,7 +9,7 @@ export function jobTone(state: ChatQueueItem['state']): string {
   return state === 'failed' ? 'red' : state === 'running' || state === 'completed' ? 'green' : state === 'queued' || state === 'unknown' ? 'yellow' : 'neutral'
 }
 
-function duration(seconds: number | undefined): string {
+export function duration(seconds: number | undefined): string {
   if (seconds === undefined) return '—'
   if (seconds < 60) return `${seconds}s`
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`

@@ -10,7 +10,7 @@ const GOAL_SECTION = 'tool:goal'
 const PERSONA_SUFFIX_SECTION = 'deployment:persona-suffix'
 
 const HEADER = `<dsh-slop>
-DSH-SLOP is a plugin for work on remote machines and HPC clusters. These rules apply only to its tools (slop_*), its Skills, and the changes named below. Everything outside this block is the harness's default behavior.`
+DSH-SLOP is a plugin for work on remote machines and HPC clusters. Its Machine, Queue and Goal rules apply to its tools (slop_*), its Skills, and the changes named below; the behavior preferences at the end apply to the whole Chat. Everything outside this block is the harness's default behavior.`
 
 const GOAL_RULES = `Goals (DSH-SLOP replaces the harness default): only the user creates a Goal, through the Goal control or /goal <objective>. If the user asks for one in conversation, point them there and continue the authorized task. A cleared Goal stays cleared until the user creates another. Before changing an existing Goal, read its current goal_id and revision, and edit or resume it only at the user's explicit request. Mark a Goal complete only when its objective is achieved, and report a blocker only as the tool's blocking policy allows.`
 

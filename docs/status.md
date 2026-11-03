@@ -1,6 +1,6 @@
 # Status
 
-DSH-SLOP **0.0.15** is the first public preview for DeepSeek Harness **0.2.1-rc.3** exactly. Source and package checks pass; the full real-system gates remain pending. Earlier real-system observations below are historical evidence, not repeat validation of this release.
+DSH-SLOP **0.0.16** is a public preview for DeepSeek Harness **0.2.1-rc.5** exactly. Source and package checks pass; the full real-system gates remain pending. Earlier real-system observations below are historical evidence, not repeat validation of this release.
 
 ## What was checked
 
@@ -16,6 +16,7 @@ Real-system observations:
 - Queue tracked real Slurm jobs on two clusters. Authenticated webhook callbacks arrived through a public Cloudflare Quick Tunnel, and the scheduler later confirmed the result.
 - On a local Host with a real model, a Queue item registered with `purpose: "continue"` woke its Chat on completion and verified the output files; a passive item delivered one notice without starting a turn. This was local runtime and Queue acceptance, not a fresh remote calculation.
 - Local continuation across a Host restart was exercised.
+- 0.0.16 has run as the author's daily macOS deployment on rc.5 with an existing product home: the Jobs page, the Machine strip and model replies were checked in the real browser. Fresh OAuth login, SSH/2FA reconnection and a remote scheduler journey were not repeated.
 
 ## What was not checked
 
@@ -26,11 +27,11 @@ These steps have no completed real-system evidence. Plan to try them yourself:
 - **Queue recovery on real systems.** Stopped-Chat activation and packed checks across local and remote items.
 - **Windows against a real remote host.** Native SSH was verified against local fixtures and the Windows named-pipe agent. Real remote login and VPN routing were not.
 - **A named Cloudflare Tunnel on your own account.** The browser-guided setup was not exercised end to end.
-- **Other Harness versions.** This release targets exactly 0.2.1-rc.3. Do not bypass its compatibility check.
+- **Other Harness versions.** This release targets exactly 0.2.1-rc.5. Do not bypass its compatibility check.
 
 ## Known limits
 
-- rc.3 live installation activates the archive's anchored component paths without a restart. Remove/install remains the tested archive replacement route and preserves product data. See the [installation guide](../INSTALL.md#update-or-remove).
+- Live installation activates the archive's anchored component paths without a restart; this was observed on rc.3, and rc.5 changes no plugin-loading code. Remove/install remains the tested archive replacement route and preserves product data. See the [installation guide](../INSTALL.md#update-or-remove).
 - Native Windows SSH does not support ProxyJump, ProxyCommand, SSH certificates, hardware-key providers, agent forwarding, user-owned OpenSSH masters or legacy SCP. Set `DSH_SLOP_SSH_BACKEND=wsl` for those. Native connections last until the Host restarts.
 - Commands run through `sh -lc`, so cluster profile scripts load as they do at login. Some print harmless `stty` errors to stderr in every command; the connect session check labels these as noise. Startup files that print to stdout, `exec` another shell or wait for input stop commands from running, which the session check reports.
 - If a transfer deadline expires while the SFTP channel is still opening, the native Windows client closes the whole connection, so a 2FA Machine needs a new sign-in.

@@ -5,7 +5,7 @@
 .surface :is(code, pre) { font-family: var(--ds-font-family-code); }
 /* Compact Chat status. Header chips and composer Jobs never occupy transcript rows. */
 /* Keep popover controls above the conversation's invisible width handles. */
-.slop-chat-header-status { flex: none; min-width: 0; padding: 0 16px 2px; position: relative; z-index: 10; }
+.slop-chat-header-status { grid-column: 1 / -1; flex: none; min-width: 0; padding: 0 16px 2px; position: relative; z-index: 10; }
 .slop-chat-header-status:has(.slop-chat-machine-chips:empty), .slop-chat-header-status:empty { display: none; }
 .slop-chat-machine-chips { min-width: 0; position: relative; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-primary); }
 /* Keep the details outside the scrolling strip so overflow cannot clip them. */

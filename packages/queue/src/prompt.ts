@@ -36,7 +36,7 @@ export function buildQueueQueryPrompt(request: Omit<QueueQueryRequest, 'prompt'>
     `Observe only these ${request.observerKind} tasks on ${targetDescription(request.target)}.`,
     observerAdvice,
     'Do not submit, cancel, retry, or modify a task.',
-    'Return JSON only with this shape: {"observations":[{"queueItemId":"...","state":"queued|running|completed|failed|cancelled|unknown","observedAt":"ISO-8601","evidence":"raw evidence","elapsedSeconds":0,"expectedRemainingSeconds":0,"recommendedCheckAfterSeconds":30,"recommendationReason":"..."}]}.',
+    'Return JSON only with this shape: {"observations":[{"queueItemId":"...","state":"queued|running|completed|failed|cancelled|unknown","observedAt":"ISO-8601","evidence":"raw evidence","elapsedSeconds":0,"expectedRemainingSeconds":0}]}.',
     'Return exactly one observation for every task you can identify. Omit a task rather than guessing its state.',
     items,
   ].join('\n')

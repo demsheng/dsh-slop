@@ -524,3 +524,108 @@
   font-size: 13px;
 }
 .slop-queue-notice time { opacity: .65; font-size: 12px; }
+
+/* Jobs main panel. Layout, type and tokens follow the Harness Automation tasks page. */
+.slop-jobs-page { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; background: var(--dsw-alias-bg-base, var(--slop-bg)); color: var(--dsw-alias-label-primary, var(--slop-ink)); font-family: var(--slop-sans); font-size: 14px; line-height: 1.6; }
+.slop-jobs-page button { font: inherit; }
+.slop-jobs-page :focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 2px; }
+.slop-jobs-list-pane { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.slop-jobs-scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; }
+.slop-jobs-content { max-width: 960px; margin: 0 auto; padding: 0 clamp(24px, 4vw, 48px) 48px; }
+.slop-jobs-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; padding-top: calc(28px + var(--dsh-frame-top-clearance, 0px)); }
+.slop-jobs-heading h1 { margin: 0; font-size: 20px; font-weight: 500; line-height: 28px; }
+.slop-jobs-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 28px; margin-bottom: 14px; }
+.slop-jobs-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.slop-jobs-tab { display: inline-flex; flex: none; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0; border-radius: 14px; background: none; color: var(--dsw-alias-label-tertiary); font-size: 14px; line-height: 22px; white-space: nowrap; cursor: pointer; }
+.slop-jobs-tab:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.slop-jobs-tab-active { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.slop-jobs-count { color: var(--dsw-alias-label-tertiary); font-size: 13px; font-variant-numeric: tabular-nums; }
+.slop-jobs-grouping { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: var(--dsw-alias-label-tertiary); font-size: 13px; }
+.slop-jobs-grouping select, .slop-jobs-field select { height: 28px; padding: 0 6px; border: 0; border-radius: 8px; background: none; color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; cursor: pointer; }
+.slop-jobs-grouping select:hover, .slop-jobs-field select:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.slop-jobs-bulk > span { margin-right: 4px; color: var(--dsw-alias-label-secondary); font-size: 13px; }
+.slop-jobs-search { width: 100%; margin-bottom: 12px; }
+.slop-jobs-message { display: flex; align-items: baseline; gap: 12px; margin: 0 0 10px; padding: 0 8px; color: var(--dsw-alias-label-secondary); font-size: 13px; }
+.slop-jobs-message > span { flex: 1; overflow-wrap: anywhere; }
+.slop-jobs-message button { flex: none; padding: 0; border: 0; background: none; color: var(--dsw-alias-label-tertiary); font-size: 13px; cursor: pointer; }
+.slop-jobs-message button:hover { color: var(--dsw-alias-label-primary); }
+.slop-jobs-warn { color: var(--dsw-alias-state-warn-label, var(--slop-warning)); }
+.slop-jobs-empty { margin: 48px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
+.slop-jobs-group + .slop-jobs-group { margin-top: 16px; }
+.slop-jobs-group-head { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; color: var(--dsw-alias-label-secondary); font-size: 13px; }
+.slop-jobs-group-title { font-weight: 500; }
+.slop-jobs-group-actions { display: flex; gap: 2px; margin-left: auto; opacity: 0; }
+.slop-jobs-group:hover .slop-jobs-group-actions, .slop-jobs-group-actions:focus-within { opacity: 1; }
+.slop-jobs-group-actions button { height: 24px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--dsw-alias-label-tertiary); font-size: 13px; cursor: pointer; }
+.slop-jobs-group-actions button:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.slop-jobs-rows { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.slop-jobs-row { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 8px; border-radius: 12px; }
+.slop-jobs-row:hover, .slop-jobs-row-open, .slop-jobs-row-checked { background: var(--dsw-alias-interactive-bg-hover); }
+.slop-jobs-row[aria-busy="true"] { opacity: .6; }
+.slop-jobs-glyph { position: relative; display: flex; flex: none; align-items: center; justify-content: center; width: 16px; height: 23px; }
+.slop-jobs-glyph input { position: absolute; inset: 3px 0; width: 16px; height: 16px; margin: 0; opacity: 0; cursor: pointer; }
+.slop-jobs-row:hover .slop-jobs-glyph input, .slop-jobs-row-checked .slop-jobs-glyph input, .slop-jobs-glyph input:focus-visible { opacity: 1; }
+.slop-jobs-row:hover .slop-jobs-glyph > :not(input), .slop-jobs-row-checked .slop-jobs-glyph > :not(input) { visibility: hidden; }
+.slop-jobs-row-main { display: flex; flex: 1; flex-direction: column; min-width: 0; padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.slop-jobs-title { overflow: hidden; font-weight: 500; line-height: 23px; text-overflow: ellipsis; white-space: nowrap; }
+.slop-jobs-row-ended .slop-jobs-title { color: var(--dsw-alias-label-tertiary); }
+.slop-jobs-summary { display: block; margin-top: 2px; color: var(--dsw-alias-label-tertiary); font-size: 13px; line-height: 21px; overflow-wrap: anywhere; }
+.slop-jobs-fact + .slop-jobs-fact::before { content: " · "; padding: 0 2px; color: var(--dsw-alias-label-tertiary); }
+.slop-jobs-trailing { display: flex; flex: none; align-items: center; height: 23px; color: var(--dsw-alias-label-tertiary); font-size: 13px; font-variant-numeric: tabular-nums; }
+.slop-jobs-row-actions { display: none; gap: 2px; }
+.slop-jobs-row:hover .slop-jobs-row-actions, .slop-jobs-row:focus-within .slop-jobs-row-actions { display: flex; }
+.slop-jobs-row:hover .slop-jobs-when, .slop-jobs-row:focus-within .slop-jobs-when { display: none; }
+.slop-jobs-row-actions button, .slop-jobs-detail-actions button, .slop-jobs-command button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin: -3px 0; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--dsw-alias-label-tertiary); cursor: pointer; }
+.slop-jobs-row-actions button:hover:not(:disabled), .slop-jobs-detail-actions button:hover:not(:disabled), .slop-jobs-command button:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.slop-jobs-page button:disabled { cursor: default; opacity: .45; }
+
+.slop-jobs-detail { --detail-gutter: 24px; display: flex; flex: 0 0 44%; flex-direction: column; min-width: 340px; max-width: 560px; min-height: 0; border-left: .5px solid var(--dsw-alias-border-l4, var(--slop-line)); background: var(--dsw-alias-bg-base, var(--slop-bg)); }
+.slop-jobs-detail-bar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 20px; height: 44px; margin-top: var(--dsh-frame-top-clearance, 0px); padding: 0 var(--detail-gutter); border-bottom: .5px solid var(--dsw-alias-border-l3, var(--slop-line)); }
+.slop-jobs-detail-tabs { display: flex; align-self: flex-end; gap: 36px; margin-bottom: -1px; }
+.slop-jobs-detail-tabs button { position: relative; padding: 0 0 13px; border: 0; background: none; color: var(--dsw-alias-label-tertiary); font-size: 13px; font-weight: 500; line-height: 16px; cursor: pointer; }
+.slop-jobs-detail-tabs button[aria-selected="true"] { color: var(--dsw-alias-state-business-primary); }
+.slop-jobs-detail-tabs button[aria-selected="true"]::after { content: ""; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; border-radius: 2px; background: var(--dsw-alias-state-business-primary); }
+.slop-jobs-detail-actions { display: flex; gap: 2px; margin-right: -8px; }
+.slop-jobs-detail-scroll { flex: 1; min-height: 0; overflow: auto; padding: 20px var(--detail-gutter) 28px; scrollbar-gutter: stable; }
+.slop-jobs-name { width: 100%; margin: 0 0 2px -6px; padding: 2px 6px; border: 1px solid transparent; border-radius: 8px; background: none; color: var(--dsw-alias-label-primary); font: inherit; font-size: 17px; font-weight: 500; line-height: 26px; }
+.slop-jobs-name:hover { border-color: var(--dsw-alias-border-l3, var(--slop-line)); }
+.slop-jobs-name:focus { border-color: var(--dsw-alias-state-business-primary); outline: none; }
+.slop-jobs-state { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; color: var(--dsw-alias-label-secondary); font-size: 13px; }
+.slop-jobs-state .slop-jobs-warn { margin-left: -4px; }
+.slop-jobs-note { margin: 0 0 10px; color: var(--dsw-alias-label-secondary); font-size: 13px; line-height: 20px; overflow-wrap: anywhere; }
+.slop-jobs-quiet { margin: 0; color: var(--dsw-alias-label-tertiary); font-size: 13px; line-height: 20px; }
+.slop-jobs-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 16px 0 0; font-size: 13px; }
+.slop-jobs-facts > div { display: contents; }
+.slop-jobs-facts dt { color: var(--dsw-alias-label-tertiary); }
+.slop-jobs-facts dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.slop-jobs-facts code { font-size: 12px; }
+.slop-jobs-link { padding: 0; border: 0; background: none; color: var(--dsw-alias-state-business-primary); cursor: pointer; }
+.slop-jobs-link:hover { text-decoration: underline; }
+.slop-jobs-section { display: flex; flex-direction: column; gap: 8px; margin-top: 24px; }
+.slop-jobs-section h2 { margin: 0; font-size: 13px; font-weight: 500; line-height: 20px; }
+.slop-jobs-field { display: flex; align-items: center; gap: 4px; color: var(--dsw-alias-label-secondary); font-size: 13px; }
+.slop-jobs-field select { margin-left: -2px; }
+.slop-jobs-input, .slop-jobs-textarea { width: 100%; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l3, var(--slop-line)); border-radius: 10px; background: none; color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; line-height: 20px; }
+.slop-jobs-input:focus, .slop-jobs-textarea:focus { border-color: var(--dsw-alias-state-business-primary); outline: none; }
+.slop-jobs-textarea { resize: vertical; }
+.slop-jobs-save { display: flex; justify-content: flex-end; }
+.slop-jobs-command { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; border-radius: 10px; background: var(--dsw-alias-markdown-code-block, var(--slop-surface-inset)); }
+.slop-jobs-command code { flex: 1; font-size: 13px; }
+.slop-jobs-command button { margin: 0; }
+.slop-jobs-evidence { margin: 0; max-height: 220px; overflow: auto; padding: 10px 12px; border-radius: 10px; background: var(--dsw-alias-markdown-code-block, var(--slop-surface-inset)); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 18px; white-space: pre-wrap; }
+.slop-jobs-history { margin: 4px 0 0; padding: 0; list-style: none; }
+.slop-jobs-history li + li { margin-top: 2px; }
+.slop-jobs-history button { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 6px 8px; border: 0; border-radius: 10px; background: none; color: inherit; text-align: left; cursor: pointer; }
+.slop-jobs-history button:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.slop-jobs-history button > :first-child { margin-top: 6px; }
+.slop-jobs-history-text { display: flex; flex-direction: column; font-size: 13px; line-height: 20px; }
+.slop-jobs-history pre { margin: 4px 8px 8px 36px; max-height: 220px; overflow: auto; padding: 10px 12px; border-radius: 10px; background: var(--dsw-alias-markdown-code-block, var(--slop-surface-inset)); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 18px; white-space: pre-wrap; }
+
+@media (max-width: 900px) {
+  .slop-jobs-page-detail .slop-jobs-list-pane { display: none; }
+  .slop-jobs-detail { --detail-gutter: 16px; flex-basis: 100%; min-width: 0; max-width: none; border-left: 0; }
+  .slop-jobs-grouping { margin-left: 0; }
+  .slop-jobs-row-actions { display: flex; }
+  .slop-jobs-when { display: none; }
+  .slop-jobs-group-actions { opacity: 1; }
+}

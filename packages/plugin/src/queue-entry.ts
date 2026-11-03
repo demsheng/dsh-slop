@@ -50,6 +50,7 @@ export async function apply(ctx: Context, config: QueueConfig): Promise<void> {
   ctx.systemPrompt.section({ name: 'slop:queue', order: 515, text: [
     'Queue records work you have already submitted and never submits, cancels or retries it. After a submission is accepted, track it with slop_queue_track and end the turn instead of polling or adding work to fill the wait.',
     'Use purpose "continue" only when the user already asked for the step that follows the job; use "monitor" otherwise. Queue holds only tracked work, so an empty result does not show that no other jobs exist. For questions about submitted jobs or their status, load queue-tracking.',
+    'Track only the job you submitted. When it is a controller (DPDispatcher, DP-GEN, a workflow manager or a driver script) that submits, retries or resubmits its own child jobs, track the controller alone and do not register those children unless the user asks to track them. Inspect children with the scheduler only to answer a status question or diagnose a failure.',
   ].join('\n') })
   ctx.effect(() => registerQueueDeliveryProjection(ctx))
   await registerQueueWorkerPresets(ctx)

@@ -11,6 +11,8 @@ An Agent submits work with upstream facilities:
 
 The Agent then calls `slop_queue_track`. The current Chat becomes the primary owner automatically. New registrations must declare `purpose: "monitor"` or `purpose: "continue"`; continue also requires a nonempty `continuation` naming the already-authorized next step and result location. Missing purpose is rejected before creating a row; correct registration arguments without resubmitting the external job.
 
+The tracked item is the job the Agent submitted. A controller such as DPDispatcher or DP-GEN that submits, retries or resubmits its own children is tracked alone; its terminal state is the signal to inspect results. The always-loaded Queue prompt and the queue-tracking Skill tell the Agent to register children only when the user asks, and to read child state from the scheduler for status questions or diagnosis. Queue has no parent/child model; a controller's children are not Queue items.
+
 ## Observer types
 
 Queue supports three observer identities:
@@ -123,3 +125,15 @@ Clicking the summary expands its table inline within the composer dock, like the
 The Observed column shows a live age in seconds, minutes, or hours, with the exact timestamp in its tooltip. A refresh button beside each age explicitly checks that owned or subscribed item, including terminal items. It uses the same-origin, nonce-protected bridge and deterministic observer only, coalesces concurrent checks of that item, and never invokes fallback. It updates observation facts only; background outbox delivery still honors a registered continuation. Pure monitoring remains passive. Failure retains the last scheduler state and observation age and shows the monitoring error. The button remains available on narrow screens.
 
 The browser reads persisted observations every ten seconds through the existing same-origin, nonce-protected Queue bridge. These reads do not run scheduler probes or wake an Agent. The UI uses red for failure, green for running/completed work, yellow for queued/unknown states, and gray for cancellation. Text always accompanies color. Native upstream background jobs keep their existing UI and are not counted unless tracked in Queue.
+
+## Jobs page
+
+The sidebar has a **Jobs** row (main panel `dsh-slop-jobs`, registered by the Queue client next to Automation tasks). It follows the Automation tasks page: a centered list with filter tabs (Active, Needs attention, Finished, All), search over label, scheduler id, Machine, Chat folder and tags, and grouping by Machine, Chat or none. It lists every Queue item across Chats that is not terminal, plus terminal items updated in the last seven days. Each row shows a state dot, the label, one line of facts (state, runtime against walltime, scheduler id, Machine or Chat, tags) and the time of the next check. A row names its most urgent problem first: the Chat could not be reached, the Machine needs sign-in, checks are failing, or checks are paused. Needs attention collects those plus failed and unknown jobs.
+
+Controls act on monitoring only; Queue still never submits, cancels or retries a job.
+
+- **Check now** runs the deterministic observer for one job, a selection, a Machine group, or every active job. A probe that records a new check error is reported as a failure for that job.
+- **Pause checks** clears the item's next check so the planner skips it, which stops failed probes and degraded-monitoring notices while a Machine is offline. **Resume checks** or a manual check schedules it again. Changing the interval of a paused job keeps it paused.
+- The detail pane (Overview and History tabs) renames the job, sets the check interval, switches between notifying the Chat and continuing in it with a next step (saving that step is the user's approval of it), edits tags and notes, opens the owning Chat, and shows the scheduler command to stop the job (`scancel`, `qdel` or `kill`) for the person to run. History lists state and phase changes from saved observations, newest first, with the raw scheduler output of each.
+
+The page reads `GET /dsh-slop/queue-settings?view=jobs` every ten seconds and `?view=job&id=` for history, through the same nonce-protected same-origin bridge; reads never probe or wake an Agent. Writes are `{ scope: "jobs-action", action: "check" | "pause" | "resume", ids }` (at most 50 ids, failures reported per id) and `{ scope: "jobs-edit", id, expectedRevision, label?, tags?, notes?, purpose?, continuation?, userIntervalSeconds? }`.

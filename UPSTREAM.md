@@ -3,15 +3,15 @@
 ## Current pin
 
 - Repository: `https://github.com/deepseek-ai/deepseek-harness.git`
-- Release: `dsh-v0.2.1-rc.3`
-- Commit: `1f81c047fc48fa190a683e469daa699857e9afe8`
-- Verified: 2026-10-26
+- Release: `dsh-v0.2.1-rc.5`
+- Commit: `b830ec950faba0a46dda564be3e2d854afed94f1`
+- Verified: 2026-11-03
 
-The tag was verified against GitHub and the published npm packages. Session format remains V4. `0.2.1-rc.4` is published on npm but has no GitHub tag; its npm packages differ from rc.3 only in `dsh-client-ui-conversation` View-tab tooltips and `dsh-mcp-client`/`dsh-mcp-resources` handling of servers without resources. It is not adopted.
+The tag was verified against GitHub and the published npm packages. Session format remains V4. rc.4 (`504a01a957`) and rc.5 add 13 commits over rc.3: `dsh-client-ui-conversation` View-tab tooltips, `dsh-mcp-client`/`dsh-mcp-resources` and `dsh-llm-deepseek-account` diagnostics moved off ACP stdout, and a `conversation.chat.reasoning.body` owner that now passes `rawText` beside display `text`. SLOP fills no reasoning slot, so no source change was needed.
 
 ## Changes adopted
 
-- rc.3 needs no source changes beyond the rc.1 adaptation below; the subagent, tool-restriction and web-startup contracts SLOP uses are unchanged from rc.1.
+- rc.3 and rc.5 need no source changes beyond the rc.1 adaptation below; the subagent, tool-restriction and web-startup contracts SLOP uses are unchanged from rc.1.
 - Replace `webRuntime` with public `webStartup.trustedHosts`; consume named JSONL persistence exports.
 - Queue fallback uses managed `startActivation` with caller delivery and dedicated restricted presets. Queue owns cancellation after publication and releases the exact activation. The child's own `structured_output` registration stays outside the preset's tool restriction.
 - Standalone composition adds upstream Worktrees and Plugin Market, and leaves directory-picker selection to upstream's automatic provider.

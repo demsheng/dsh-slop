@@ -28,19 +28,19 @@ Each component can be enabled or disabled in Plugin Manager. Queue still tracks 
 
 | Requirement | Version |
 | --- | --- |
-| DeepSeek Harness | **0.2.1-rc.3** exactly; other versions are unverified |
+| DeepSeek Harness | **0.2.1-rc.5** exactly; other versions are unverified |
 | Node.js | `^22.19.0 \|\| >=24.0.0`, only for the standalone CLI |
 | SSH | OpenSSH client on macOS and Linux; Windows OpenSSH Client feature on Windows |
 
 ### 1. Install
 
-Download `dsh-slop-0.0.15.tgz` and its `.sha256` file from [v0.0.15](https://github.com/zrzrv5/dsh-slop/releases/tag/v0.0.15), or [build from source](INSTALL.md#build-the-installation-package). Do not unpack the `.tgz`.
+Download `dsh-slop-0.0.16.tgz` and its `.sha256` file from [v0.0.16](https://github.com/zrzrv5/dsh-slop/releases/tag/v0.0.16), or [build from source](INSTALL.md#build-the-installation-package). Do not unpack the `.tgz`.
 
 - **Desktop App:** **Plugins → Add plugin**, paste the file's absolute path, **Install**, **Enable now**. If a component still shows *Not running*, quit and reopen Harness once.
 - **Command line:**
 
 ```sh
-dsh plugin --profile web add /absolute/path/to/dsh-slop-0.0.15.tgz
+dsh plugin --profile web add /absolute/path/to/dsh-slop-0.0.16.tgz
 dsh web
 ```
 
