@@ -16,7 +16,7 @@ export function publishedPluginIndex(metadata, version, registry) {
     title: 'DSH-SLOP',
     plugins: [{
       name: manifest.name, title: 'DSH-SLOP', description: manifest.description,
-      repository: { url: 'https://github.com/zrzrv5/dsh-slop' },
+      repository: { url: 'https://github.com/demsheng/dsh-slop' },
       versions: [{ version, publishTimestamp: Math.floor(timestamp), source: { type: 'npm', registry }, engines: { dsh: manifest.engines.dsh } }],
     }],
   }, new URL('index.json', registry).href)

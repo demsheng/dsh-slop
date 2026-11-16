@@ -3,20 +3,23 @@
 ## Current pin
 
 - Repository: `https://github.com/deepseek-ai/deepseek-harness.git`
-- Release: `dsh-v0.2.1-rc.5`
-- Commit: `b830ec950faba0a46dda564be3e2d854afed94f1`
-- Verified: 2026-11-03
+- Release: `dsh-v0.2.2-rc.3`
+- Commit: `38a6a5c965aa99ab525161efb7cc5cf1fe62fced`
+- Verified: 2026-11-16
 
-The tag was verified against GitHub and the published npm packages. Session format remains V4. rc.4 (`504a01a957`) and rc.5 add 13 commits over rc.3: `dsh-client-ui-conversation` View-tab tooltips, `dsh-mcp-client`/`dsh-mcp-resources` and `dsh-llm-deepseek-account` diagnostics moved off ACP stdout, and a `conversation.chat.reasoning.body` owner that now passes `rawText` beside display `text`. SLOP fills no reasoning slot, so no source change was needed.
+The tag was verified against GitHub and the published npm packages. Session format remains V4. The 0.2.2 line replaces the loader, projection, subagent and tool-executor contracts SLOP uses; the changes SLOP needed are listed below. Nothing in this repository vendors or patches upstream code.
 
 ## Changes adopted
 
-- rc.3 and rc.5 need no source changes beyond the rc.1 adaptation below; the subagent, tool-restriction and web-startup contracts SLOP uses are unchanged from rc.1.
-- Replace `webRuntime` with public `webStartup.trustedHosts`; consume named JSONL persistence exports.
-- Queue fallback uses managed `startActivation` with caller delivery and dedicated restricted presets. Queue owns cancellation after publication and releases the exact activation. The child's own `structured_output` registration stays outside the preset's tool restriction.
-- Standalone composition adds upstream Worktrees and Plugin Market, and leaves directory-picker selection to upstream's automatic provider.
-- Optional persistent PTC memory is supplied as an explicit patch; per-call execution remains the default.
-- Plugin archives name components by paths anchored beside the bundle patch. Bare names install live on Linux, but on Windows they resolve to native real paths that can miss the profile layer, so the components' own `@deepseek-ai/cordis` imports fail. The archive declares exact `engines.dsh` compatibility.
+- `@deepseek-ai/cordis` 4.1.0, `cordis-plugin-loader` 1.1.0 and `schemastery` 3.19.0 replace the 4.0.5/1.0.6/3.18.5 line, and the `zod` catalog entry follows upstream to 4.6.6 so one copy of the type system serves both sides.
+- Session projections take the key and state as two type arguments, `register()` is asynchronous, and the registry's `stateOf(session, key)` is deprecated. Queue registers its receipt fold with `await` and reads it through the returned `ProjectionHandle`.
+- The owning service now answers the durable Agent preset: Queue calls `agentPresets.presetForSession(session)` instead of reading another domain's projection cell. Cordis 4.1 rejects a typed service property read on a context that declares no injection, so the Queue reads the preset service and the worker's `tools` through `ctx.get()` on the Agent's own context.
+- `SubagentActivationSpec` carries the task fields flat, with no nested `request` object; Queue's fallback worker builds that spec directly.
+- The PTC session events (`tool/ptc-dispatch`, `tool/ptc-dispatch-start`) are declared by `@deepseek-ai/dsh-tool-executor-ptc` rather than `dsh-session`; the UI takes a type-only dependency on that package to keep reading persisted PTC logs.
+- Tool execution is selected by plugin. `ToolRuntime` no longer has a `mode` config or `presentAs()`, so tests mount `@deepseek-ai/dsh-tool-executor-native` or `@deepseek-ai/dsh-tool-executor-ptc` as the composition does.
+- `AgentRegistry` requires `sessionProjections`; fixtures mount that registry first.
+- The Composer's `InputActions` gained `insertQuote`, and the shared `Tooltip` opens on pointer and focus events.
+- `@deepseek-ai/dsh` requires Node.js `>=24.9.0`; the standalone CLI requirement and the root `engines` field follow it.
 
 ## Dependency policy
 

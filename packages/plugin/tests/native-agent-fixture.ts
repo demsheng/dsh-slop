@@ -22,9 +22,12 @@ export async function nativeAgentFixture(cwd = '/tmp', persistence?: { root: str
   await ctx.plugin(LlmRuntime)
   if (persistence !== undefined) await ctx.plugin(JsonlSessionPersistence, { root: persistence.root, compression: 'none' })
   await ctx.plugin(AgentLoop)
-  ctx.sessionProjections.register({ key: 'agentPreset', stateVersion: 1, stateSchema: z.string().nullable(), init: () => 'standard', apply: state => state })
-  registerQueueDeliveryProjection(ctx)
+  await ctx.sessionProjections.register({ key: 'agentPreset', stateVersion: 1, stateSchema: z.string().nullable(), init: () => 'standard', apply: state => state })
+  const deliveryProjection = await registerQueueDeliveryProjection(ctx)
+  // Queue resolves its durable preset through the owning service; this fixture
+  // has no loaded preset roster, so the one preset is answered directly.
+  ctx.provide('agentPresets' as string, { presetForSession: () => 'standard' })
   const owned = persistence?.resume === true ? await ctx.agents.resume({ resumeSessionId: SessionId('queue-inbox-proof') }) : await ctx.agents.create({ sessionId: SessionId('queue-inbox-proof'), meta: { cwd, agentPreset: 'standard' } })
   onTestFinished(async () => { await owned.dispose(); await ctx.fiber.dispose() })
-  return { ctx, agent: owned.agent, dispose: async () => { await owned.dispose(); await ctx.fiber.dispose() } }
+  return { ctx, agent: owned.agent, deliveryProjection, dispose: async () => { await owned.dispose(); await ctx.fiber.dispose() } }
 }

@@ -1,14 +1,16 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
-import type { SubagentActivationSpec } from '@deepseek-ai/dsh-subagent'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
+import type { SubagentActivationSpec, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { machineIdSchema, queueItemIdSchema, queueSessionTargetSchema, type QueueQueryRequest } from '../../queue/src/index.ts'
 import { describe, expect, it, vi } from 'vitest'
 import { Config, fallbackAgentOptions, type QueueConfig } from '../src/queue-entry.ts'
 import { DshQueueRuntime } from '../src/queue-runtime.ts'
+import type { DeliveryProjection } from '../src/queue-delivery-projection.ts'
 
 const target = queueSessionTargetSchema.parse({ sessionId: 'session-zns', cwd: '/work/project', agentPreset: 'standard' })
-const parent = { id: 'session-zns', ctx: { sessionProjections: { stateOf: () => 'standard' } }, session: { id: 'session-zns', header: { cwd: '/work/project', agentPreset: 'standard' } } } as unknown as Agent
+const parent = { id: 'session-zns', ctx: { get: (name: string) => name === 'agentPresets' ? { presetForSession: () => 'standard' } : undefined }, session: { id: 'session-zns', header: { cwd: '/work/project', agentPreset: 'standard' } } } as unknown as Agent
 
 const request: QueueQueryRequest = {
   batchId: 'batch-1',
@@ -20,18 +22,19 @@ const request: QueueQueryRequest = {
 }
 
 /** Run one fallback check and return the request that reached `subagents.startActivation`. */
-async function startRequest(reader?: () => AgentOptions | undefined): Promise<SubagentActivationSpec['request']> {
+async function startRequest(reader?: () => AgentOptions | undefined): Promise<SubagentStartRequest> {
   const dispose = vi.fn(async () => {})
   const start = vi.fn(async (_spec: SubagentActivationSpec) => ({ result: Promise.resolve({ stopReason: 'completed', structured: { observations: [] } }), dispose }))
   const ctx = { agents: { get: () => parent }, subagents: { startActivation: start } } as unknown as Context
-  await new DshQueueRuntime(ctx, reader === undefined ? {} : { fallbackAgentOptions: reader }).query(request)
+  const deliveryProjection = { stateOf: () => ({ 'next-turn': [], 'next-step': [], receipts: {}, messageIds: {} }) } as unknown as ProjectionHandle<DeliveryProjection>
+  await new DshQueueRuntime(ctx, { deliveryProjection, ...(reader === undefined ? {} : { fallbackAgentOptions: reader }) }).query(request)
   expect(start).toHaveBeenCalledOnce()
   const spec = start.mock.calls[0]?.[0]
   if (spec === undefined) throw new Error('Expected a worker activation')
   expect(spec.provider).toBe('spawn')
   expect(spec.delivery).toBe('caller')
-  expect(spec.request.agentPreset).toBe('slop-queue-query-machine')
-  return spec.request
+  expect(spec.agentPreset).toBe('slop-queue-query-machine')
+  return spec
 }
 
 const volatile = (value: string) => ({ get: () => value })

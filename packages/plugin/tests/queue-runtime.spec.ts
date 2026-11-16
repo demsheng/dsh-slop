@@ -9,8 +9,15 @@ import {
   type QueueQueryRequest,
 } from '../../queue/src/index.ts'
 import { SessionStore } from '@deepseek-ai/dsh-session'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import type { DeliveryProjection } from '../src/queue-delivery-projection.ts'
 import { DshQueueRuntime, queueSessionTargetForAgent } from '../src/queue-runtime.ts'
+
+/** The runtime reads receipts through the registration handle it is given. */
+function deliveryProjection(): ProjectionHandle<DeliveryProjection> {
+  return { stateOf: () => ({ 'next-turn': [], 'next-step': [], receipts: {}, messageIds: {} }) } as unknown as ProjectionHandle<DeliveryProjection>
+}
 
 function target(sessionId = 'session-zns'): ReturnType<typeof queueSessionTargetSchema.parse> {
   return queueSessionTargetSchema.parse({ sessionId, cwd: '/work/project', agentPreset: 'standard' })
@@ -19,7 +26,7 @@ function target(sessionId = 'session-zns'): ReturnType<typeof queueSessionTarget
 function agent(sessionId = 'session-zns', cwd = '/work/project', agentPreset = 'standard') {
   return {
     id: sessionId,
-    ctx: { sessionProjections: { stateOf: () => agentPreset } },
+    ctx: { get: (name: string) => name === 'agentPresets' ? { presetForSession: () => agentPreset } : undefined },
     session: {
       id: sessionId,
       header: { cwd, agentPreset },
@@ -57,7 +64,7 @@ describe('DSH Queue runtime', () => {
     const result = new Promise<{ stopReason: string }>(resolve => { finish = resolve })
     const dispose = vi.fn(async () => { finish({ stopReason: 'cancelled' }) })
     const startActivation = vi.fn(async () => ({ childId: 'query-worker', result, dispose }))
-    const runtime = new DshQueueRuntime({ agents: { get: () => agent() }, subagents: { startActivation } } as unknown as Context)
+    const runtime = new DshQueueRuntime({ agents: { get: () => agent() }, subagents: { startActivation } } as unknown as Context, { deliveryProjection: deliveryProjection() })
     const query = runtime.query(request())
     const rejected = expect(query).rejects.toThrow('Queue runtime closed')
     await vi.waitFor(() => { expect(startActivation).toHaveBeenCalledOnce() })
@@ -78,17 +85,17 @@ describe('DSH Queue runtime', () => {
     const start = vi.fn(async () => ({ result: Promise.resolve({ stopReason: 'completed', structured: { observations: [] } }), dispose }))
     const ctx = { agents: { get: () => undefined, resume }, agentPresets: { mount }, subagents: { startActivation: start } } as unknown as Context
     const legacy = queueSessionTargetSchema.parse({ ...target(), agentPreset: 'code' })
-    await new DshQueueRuntime(ctx).query(request({ parent: legacy, items: [] }))
+    await new DshQueueRuntime(ctx, { deliveryProjection: deliveryProjection() }).query(request({ parent: legacy, items: [] }))
     expect(mount).toHaveBeenCalledWith(expect.anything(), 'ptc')
     expect(legacy.agentPreset).toBe('code')
-    expect(start).toHaveBeenCalledWith(expect.objectContaining({ provider: 'spawn', delivery: 'caller', request: expect.objectContaining({ parent }) }))
+    expect(start).toHaveBeenCalledWith(expect.objectContaining({ provider: 'spawn', delivery: 'caller', parent }))
   })
 
   it('delivers a passive update to a migrated ptc Chat from an old code target', async () => {
     const live = agent('session-zns', '/work/project', 'ptc')
     const flush = vi.fn(async () => true)
     const ctx = { agents: { get: () => live }, sessions: { flush } } as unknown as Context
-    await new DshQueueRuntime(ctx).deliver({ target: { ...target(), agentPreset: 'code' }, delivery: 'notify', triggers: [] })
+    await new DshQueueRuntime(ctx, { deliveryProjection: deliveryProjection() }).deliver({ target: { ...target(), agentPreset: 'code' }, delivery: 'notify', triggers: [] })
     expect(live.session.append).toHaveBeenCalledOnce()
     expect(live.session.append).toHaveBeenCalledWith('user/message', expect.objectContaining({ source: expect.objectContaining({ kind: 'dsh-slop-queue', plugin: 'dsh-slop-queue', form: 'notice' }) }), { surfaceOp: 'append' })
     expect(flush).toHaveBeenCalledWith(live.session)
@@ -103,7 +110,7 @@ describe('DSH Queue runtime', () => {
     const session = host.sessions.create(undefined, { meta: { cwd: '/work/project', agentPreset: 'standard' } })
     const idle = {
       id: String(session.id),
-      ctx: { sessionProjections: { stateOf: () => 'standard' } },
+      ctx: { get: (name: string) => name === 'agentPresets' ? { presetForSession: () => 'standard' } : undefined },
       session,
       followup: vi.fn(),
       inject: vi.fn(),
@@ -119,7 +126,7 @@ describe('DSH Queue runtime', () => {
       evidence: 'job 15859042: FAILED',
     })
 
-    await new DshQueueRuntime({ agents: { get: () => idle }, sessions: { flush } } as unknown as Context).deliver({
+    await new DshQueueRuntime({ agents: { get: () => idle }, sessions: { flush } } as unknown as Context, { deliveryProjection: deliveryProjection() }).deliver({
       target: target(String(session.id)),
       delivery: 'notify',
       triggers: [trigger],
@@ -146,7 +153,7 @@ describe('DSH Queue runtime', () => {
     }
     const appendAgain = vi.spyOn(session, 'append')
 
-    await new DshQueueRuntime({ agents: { get: () => idle }, sessions: { flush } } as unknown as Context).deliver({
+    await new DshQueueRuntime({ agents: { get: () => idle }, sessions: { flush } } as unknown as Context, { deliveryProjection: deliveryProjection() }).deliver({
       target: target(String(session.id)),
       delivery: 'notify',
       triggers: [trigger],
@@ -155,7 +162,7 @@ describe('DSH Queue runtime', () => {
     expect(appendAgain).not.toHaveBeenCalled()
     expect(flush).toHaveBeenCalledTimes(2)
 
-    await new DshQueueRuntime({ agents: { get: () => idle }, sessions: { flush } } as unknown as Context).deliver({
+    await new DshQueueRuntime({ agents: { get: () => idle }, sessions: { flush } } as unknown as Context, { deliveryProjection: deliveryProjection() }).deliver({
       target: target(String(session.id)), delivery: 'notify',
       triggers: [{ ...trigger, triggerKey: 'queue-failure:2:failed', observedAt: '2026-09-21T20:30:00.000Z' }],
     })
@@ -192,17 +199,15 @@ describe('DSH Queue runtime', () => {
       agents: { get: vi.fn(() => parent) },
       subagents: { startActivation: start },
     } as unknown as Context
-    const runtime = new DshQueueRuntime(ctx)
+    const runtime = new DshQueueRuntime(ctx, { deliveryProjection: deliveryProjection() })
     const result = await runtime.query(request())
     expect(result).toMatchObject({ observations: [{ queueItemId: 'queue-1', state: 'running' }] })
     expect(start).toHaveBeenCalledWith(expect.objectContaining({
       provider: 'spawn', delivery: 'caller',
-      request: expect.objectContaining({
       cwd: '/work/project', parent,
       prompt: [{ type: 'text', text: expect.stringContaining('Check Slurm job 1234') }],
       agentPreset: 'slop-queue-query-machine',
       outputSchema: expect.objectContaining({ type: 'object' }),
-      }),
     }))
     expect(dispose).toHaveBeenCalledTimes(1)
   })
@@ -226,7 +231,7 @@ describe('DSH Queue runtime', () => {
         })),
       },
     } as unknown as Context
-    const runtime = new DshQueueRuntime(ctx)
+    const runtime = new DshQueueRuntime(ctx, { deliveryProjection: deliveryProjection() })
     await runtime.query(request({ items: [] }))
     expect(mount).toHaveBeenCalledWith(expect.anything(), 'standard')
     expect(disposeRun).toHaveBeenCalledTimes(1)
@@ -239,7 +244,7 @@ describe('DSH Queue runtime', () => {
       agents: { get: vi.fn(() => agent('session-zns', '/wrong/project')) },
       subagents: { startActivation: start },
     } as unknown as Context
-    const runtime = new DshQueueRuntime(ctx)
+    const runtime = new DshQueueRuntime(ctx, { deliveryProjection: deliveryProjection() })
     await expect(runtime.query(request())).rejects.toThrow(/stored cwd and preset/)
     expect(start).not.toHaveBeenCalled()
   })
@@ -262,7 +267,7 @@ describe('DSH Queue runtime', () => {
       sessions: { flush: vi.fn(async () => true) },
       sessionController: { create },
     } as unknown as Context
-    const runtime = new DshQueueRuntime(ctx)
+    const runtime = new DshQueueRuntime(ctx, { deliveryProjection: deliveryProjection() })
     const trigger = deliveryTriggerSchema.parse({
       triggerKey: 'queue-1:2:completed',
       queueItemId: 'queue-1',

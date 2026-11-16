@@ -8,6 +8,8 @@ import { createScope } from '@deepseek-ai/dsh-scope'
 import { SessionStore } from '@deepseek-ai/dsh-session'
 import { SessionProjectionRegistry } from '@deepseek-ai/dsh-session-projection'
 import { SystemPrompt, renderPrompt } from '@deepseek-ai/dsh-system-prompt'
+import * as nativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
+import * as ptcToolExecutor from '@deepseek-ai/dsh-tool-executor-ptc'
 import { defineTool, ToolRuntime } from '@deepseek-ai/dsh-tools'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { registerGoalPolicy } from '@dsh-slop/runtime-base/goal-policy'
@@ -21,6 +23,7 @@ async function fixture() {
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(nativeToolExecutor)
   await ctx.plugin(CommandRuntime)
   await ctx.plugin(GoalService)
   await ctx.plugin(goalCommand)
@@ -57,10 +60,15 @@ async function fixture() {
   const scope = createScope(ctx, agent)
   const unregister = ctx.agents.register(agent)
   let callNumber = 0
-  const call = (name: string) => ctx.tools.execute({
-    callId: ToolCallId(`goal-policy-${++callNumber}`), name, arguments: {},
-    agent, signal: new AbortController().signal,
-  })
+  const call = async (name: string) => {
+    const { results } = await ctx.tools.execute({
+      calls: [{ type: 'tool-call', id: ToolCallId(`goal-policy-${++callNumber}`), name, arguments: '{}' }],
+      agent, signal: new AbortController().signal,
+    })
+    const first = results[0]
+    if (first === undefined) throw new Error('Expected one tool result')
+    return first.result
+  }
   const command = (line: string) => ctx.commands.execute(agent, line, [], new AbortController().signal)
   return { ctx, agent, scope, create, call, command, unregister }
 }
@@ -104,7 +112,7 @@ describe('explicit Goal opt-in', () => {
     const f = await fixture()
     // Prompt generation needs the language only; this test executes no code.
     f.ctx.provide('ptcRuntime', { language: 'typescript' })
-    f.scope.ctx.get('tools')?.presentAs('ptc')
+    await f.scope.ctx.plugin(ptcToolExecutor)
     onTestFinished(registerGoalPolicy(f.ctx))
     const assembly = await f.ctx.systemPrompt.assemble({ scope: f.agent, agent: f.agent })
     const sdk = assembly.sections.find(section => section.name === 'tools:sdk')?.text

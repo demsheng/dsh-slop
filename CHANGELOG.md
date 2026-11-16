@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.0.17, public preview
+
+Targets DeepSeek Harness **0.2.2-rc.3** exactly; rc.5 is no longer accepted. All DSH package pins, the `cordis` 4.1.0 line and the `zod` catalog entry move together with upstream. The plugin behaves as before; the changes are the upstream contracts it now uses:
+
+- Queue reads its delivery receipts through the projection registration handle and resolves the durable Agent preset through the preset service, because the projection registry's cross-domain read is deprecated; Cordis 4.1 requires those reads to go through `ctx.get()` on an Agent's own context.
+- The Queue fallback worker builds the flat `SubagentActivationSpec` the subagent service now requires.
+- The Chat view keeps rendering persisted PTC tool calls by taking the event declarations from `@deepseek-ai/dsh-tool-executor-ptc`.
+- The standalone CLI now needs Node.js `>=24.9.0`, matching the pinned Harness.
+
+See [upstream](UPSTREAM.md) for the exact tag, commit and the full list of adopted contract changes.
+
 ## 0.0.16, public preview
 
 Targets DeepSeek Harness **0.2.1-rc.5** exactly; rc.3 is no longer accepted. All DSH package pins move together and no SLOP source change was required. See [upstream](UPSTREAM.md).

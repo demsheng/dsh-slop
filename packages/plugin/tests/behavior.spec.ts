@@ -2,7 +2,9 @@ import { Context } from '@deepseek-ai/cordis'
 import { AgentRegistry, type Agent } from '@deepseek-ai/dsh-agent'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import { SessionStore } from '@deepseek-ai/dsh-session'
+import { SessionProjectionRegistry } from '@deepseek-ai/dsh-session-projection'
 import { SystemPrompt, renderPrompt } from '@deepseek-ai/dsh-system-prompt'
+import * as nativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { registerBehavior, type BehaviorSelection } from '@dsh-slop/runtime-base/behavior'
 import { BEHAVIOR_PREAMBLE, BEHAVIOR_TRAITS, DEFAULT_BEHAVIOR_LEVELS, behaviorLevelText, type BehaviorLevels } from '@dsh-slop/runtime-base/behavior-catalog'
 import { registerSlopPromptBlock } from '@dsh-slop/runtime-base/prompt-block'
@@ -13,7 +15,9 @@ async function fixture() {
   onTestFinished(async () => { await ctx.fiber.dispose() })
   await ctx.plugin(SystemPrompt, { includeHarnessIdentity: false })
   await ctx.plugin(SessionStore)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
+  await ctx.plugin(nativeToolExecutor)
   ctx.systemPrompt.section({ name: 'slop:queue', order: 515, text: 'Queue rule.' })
   const agents: Agent[] = []
   const start = async (): Promise<Agent> => {

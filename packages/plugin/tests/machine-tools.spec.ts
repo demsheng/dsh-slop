@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
+import { jsonSchemaToTs } from '@deepseek-ai/dsh-tool-executor-ptc'
 import {
-  jsonSchemaToTs,
   validateJsonSchemaValue,
   type ToolDefinition,
 } from '@deepseek-ai/dsh-tools'

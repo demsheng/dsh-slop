@@ -1,4 +1,5 @@
 import type {} from '@deepseek-ai/dsh-tools'
+import type {} from '@deepseek-ai/dsh-tool-executor-ptc'
 import type { ConversationMatch, ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { parseMachineInfoCardData, type MachineInfoCardData } from './MachineInfoCard.tsx'
 import { parseSetupMachineChatSubmission, setupMachineSubmissionCallId } from './machine-setup-draft.ts'

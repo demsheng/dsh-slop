@@ -20,7 +20,7 @@ function execution() {
   return {
     agent: {
       id: 'agent-project-work',
-      ctx: { sessionProjections: { stateOf: () => 'code' } },
+      ctx: { get: (name: string) => name === 'agentPresets' ? { presetForSession: () => 'code' } : undefined },
       session: {
         id: 'session-project-work',
         header: { cwd: '/workspace/current', agentPreset: 'code' },

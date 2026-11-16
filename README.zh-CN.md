@@ -28,19 +28,21 @@ DSH-SLOP 希望解决这些问题。（当然，如果 `tmux` 和 `claude rc` �
 
 | 要求 | 版本 |
 | --- | --- |
-| DeepSeek Harness | 必须是 **0.2.1-rc.5**；其他版本未验证 |
-| Node.js | `^22.19.0 \|\| >=24.0.0`，仅独立 CLI 需要 |
+| DeepSeek Harness | 必须是 **0.2.2-rc.3**；其他版本未验证 |
+| Node.js | `>=24.9.0`，仅独立 CLI 需要 |
 | SSH | macOS 和 Linux 使用 OpenSSH 客户端；Windows 需要 OpenSSH Client 功能 |
+
+每个版本只对应一个 Harness 版本，各版本对应的 Harness 下载地址见[版本对照](VERSIONS.md)。
 
 ### 1. 安装
 
-从 [v0.0.16](https://github.com/zrzrv5/dsh-slop/releases/tag/v0.0.16) 下载 `dsh-slop-0.0.16.tgz` 和对应的 `.sha256` 文件，也可以[从源码构建](INSTALL.md#build-the-installation-package)。不要解压 `.tgz`。
+从 [v0.0.17](https://github.com/demsheng/dsh-slop/releases/tag/v0.0.17) 下载 `dsh-slop-0.0.17.tgz` 和对应的 `.sha256` 文件，也可以[从源码构建](INSTALL.md#build-the-installation-package)。不要解压 `.tgz`。
 
 - **桌面 App：** **Plugins → Add plugin**，粘贴文件的绝对路径，依次选择 **Install**、**Enable now**。如果仍有组件显示 *Not running*，完全退出并重新打开 Harness 一次。
 - **命令行：**
 
 ```sh
-dsh plugin --profile web add /absolute/path/to/dsh-slop-0.0.16.tgz
+dsh plugin --profile web add /absolute/path/to/dsh-slop-0.0.17.tgz
 dsh web
 ```
 

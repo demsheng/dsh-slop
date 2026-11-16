@@ -2,11 +2,11 @@
 
 [README](README.md) · [中文 README](README.zh-CN.md)
 
-The DSH-SLOP **0.0.16 public preview** targets **DeepSeek Harness 0.2.1-rc.5** exactly. Other Harness versions have not been verified. SLOP adds Machine, Knowledge and Queue to your existing Harness; keep your current model provider and account.
+The DSH-SLOP **0.0.17 public preview** targets **DeepSeek Harness 0.2.2-rc.3** exactly. Other Harness versions have not been verified. SLOP adds Machine, Knowledge and Queue to your existing Harness; keep your current model provider and account. The download for this Harness version, and for every earlier release pair, is listed in [release versions](VERSIONS.md).
 
 ## Get the installation package
 
-Download `dsh-slop-0.0.16.tgz` and `dsh-slop-0.0.16.tgz.sha256` from [v0.0.16](https://github.com/zrzrv5/dsh-slop/releases/tag/v0.0.16). In the download directory, verify them with `shasum -a 256 -c dsh-slop-0.0.16.tgz.sha256`. You can also [build from source](#build-the-installation-package).
+Download `dsh-slop-0.0.17.tgz` and `dsh-slop-0.0.17.tgz.sha256` from [v0.0.17](https://github.com/demsheng/dsh-slop/releases/tag/v0.0.17). In the download directory, verify them with `shasum -a 256 -c dsh-slop-0.0.17.tgz.sha256`. You can also [build from source](#build-the-installation-package).
 
 Keep the `.tgz` file compressed. If you download a GitHub Actions artifact as a `.zip`, unzip that outer file to get the `.tgz` inside.
 
@@ -18,23 +18,23 @@ The standalone runtime includes upstream Plugin Market. Market indices accept np
 
 ## Install in the desktop App
 
-Windows accepts paths such as `C:\Users\Alice\Downloads\dsh-slop-0.0.16.tgz`, including spaces and Unicode. Enabling the plugin does not require SSH.
+Windows accepts paths such as `C:\Users\Alice\Downloads\dsh-slop-0.0.17.tgz`, including spaces and Unicode. Enabling the plugin does not require SSH.
 
 Windows Machine connections run **natively, without WSL**. Install the Windows **OpenSSH Client** optional feature if `ssh` is unavailable; it resolves your Windows SSH configuration. The plugin keeps a native SSH connection for key/ssh-agent and protected password/2FA authentication, remote commands, and SFTP transfers. `/onboard-slop` reads `%USERPROFILE%\.ssh\config`; `~/` key paths refer to your Windows home. Connections use Windows networking directly, including VPN routes available to the Host process.
 
 Native mode supports direct targets and ordinary SSH aliases. ProxyJump, ProxyCommand, SSH certificates, hardware-key providers, agent forwarding, user-owned OpenSSH masters, and legacy SCP (`protocol: "scp"`) require the optional WSL backend. To retain the 0.0.3 behavior, set `DSH_SLOP_SSH_BACKEND=wsl` and restart Harness; `DSH_SLOP_WSL_DISTRO` can select its distribution. WSL mode requires `ssh`, `scp`, and `ssh-keyscan` inside that distribution. Existing WSL-only aliases and keys must either stay in that mode or be configured separately for Windows. No keys, SSH configuration, or saved Machine records are copied or migrated automatically.
 
-1. Open DeepSeek Harness and check that its version is **0.2.1-rc.5**.
+1. Open DeepSeek Harness and check that its version is **0.2.2-rc.3**.
 2. Open **Plugins** in the sidebar, then **Add plugin**.
-3. Paste the absolute path to `dsh-slop-0.0.16.tgz`. On macOS, select the file in Finder and press **Option–Command–C** to copy its pathname. Paste the path without extra quotation marks.
+3. Paste the absolute path to `dsh-slop-0.0.17.tgz`. On macOS, select the file in Finder and press **Option–Command–C** to copy its pathname. Paste the path without extra quotation marks.
 4. Select **Install** and wait for installation to finish. Keep the default registry unless you normally use another registry.
-5. When installation finishes, select **Enable now**. The rc.5 package activates without restarting Harness. If the plugin page still shows a component as *Not running*, quit Harness completely and reopen it.
+5. When installation finishes, select **Enable now**. The rc.3 package activates without restarting Harness. If the plugin page still shows a component as *Not running*, quit Harness completely and reopen it.
 6. Open a new Chat and enter `/onboard-slop`. If Harness opens its welcome page and you already use another provider, choose **Add API Key → Set up later** to return to the workspace without changing credentials.
 
 For example, the input can be:
 
 ```text
-/Users/alice/Downloads/dsh-slop-0.0.16.tgz
+/Users/alice/Downloads/dsh-slop-0.0.17.tgz
 ```
 
 A direct HTTPS download URL of the release's `.tgz` asset also works in this field. A GitHub Release page URL and the repository's Source code archive are different files.
@@ -47,10 +47,10 @@ Check the executable you will use:
 dsh --version
 ```
 
-It should print `0.2.1-rc.5`. If you use a standalone CLI installation, it requires Node.js `^22.19.0 || >=24.0.0`. You can install the pinned CLI with:
+It should print `0.2.2-rc.3`. If you use a standalone CLI installation, it requires Node.js `>=24.9.0`. You can install the pinned CLI with:
 
 ```sh
-npm install --global @deepseek-ai/dsh@0.2.1-rc.5
+npm install --global @deepseek-ai/dsh@0.2.2-rc.3
 ```
 
 The macOS App also includes a CLI executable. You can inspect it without changing your PATH:
@@ -62,7 +62,7 @@ The macOS App also includes a CLI executable. You can inspect it without changin
 For an existing Web profile, stop the process serving that profile, then run:
 
 ```sh
-dsh plugin --profile web add /absolute/path/to/dsh-slop-0.0.16.tgz
+dsh plugin --profile web add /absolute/path/to/dsh-slop-0.0.17.tgz
 dsh web
 ```
 
@@ -102,10 +102,10 @@ Home Knowledge still defaults to `~/.slop/knowledge`. Workspace Knowledge remain
 
 ## Build the installation package
 
-These commands are for developers or users who have only the source. They require Git, Node.js `^22.19.0 || >=24.0.0`, npm and pnpm `11.19.0`.
+These commands are for developers or users who have only the source. They require Git, Node.js `>=24.9.0`, npm and pnpm `11.19.0`.
 
 ```sh
-git clone https://github.com/zrzrv5/dsh-slop.git
+git clone https://github.com/demsheng/dsh-slop.git
 cd dsh-slop
 pnpm install --frozen-lockfile
 pnpm plugin:pack
@@ -114,8 +114,8 @@ pnpm plugin:pack
 The command builds SLOP and prints the absolute path to:
 
 ```text
-artifacts/dsh-slop-0.0.16.tgz
-artifacts/dsh-slop-0.0.16.tgz.sha256
+artifacts/dsh-slop-0.0.17.tgz
+artifacts/dsh-slop-0.0.17.tgz.sha256
 ```
 
 Install that `.tgz` using either route above. You can send it to another user without sending your checkout, Node modules, profile, credentials or data. The plugin archive contains JavaScript and assets; the separate `release:pack` archive is a standalone launcher distribution and is not an Add plugin package.
@@ -154,13 +154,13 @@ For a versioned archive replacement, use the tested remove/install route below. 
 3. Return to **Plugins → Add plugin** and install the new versioned `.tgz`, then select **Enable now**.
 4. Quit and reopen Harness. Check that Plugins shows the new SLOP version and four running components.
 
-Keep the same data directory and Harness version. Current plugin package: `dsh-slop-0.0.16.tgz`; Harness baseline: `0.2.1-rc.5`.
+Keep the same data directory and Harness version. Current plugin package: `dsh-slop-0.0.17.tgz`; Harness baseline: `0.2.2-rc.3`.
 
 For the CLI, stop the Web Host and run:
 
 ```sh
 dsh plugin --profile web remove dsh-slop
-dsh plugin --profile web add /absolute/path/to/new/dsh-slop-0.0.16.tgz
+dsh plugin --profile web add /absolute/path/to/new/dsh-slop-0.0.17.tgz
 dsh web
 ```
 
@@ -175,7 +175,7 @@ Do not upgrade Harness itself just to try this plugin without reading [migration
 | Package not found after entering `dsh-slop` | Use the absolute `.tgz` path. There is no npm publication yet. |
 | GitHub repository installation fails | Use the built `.tgz`, not the source repository or GitHub Source code archive. |
 | Local file not found | Use the full path without quotes; keep `.tgz` compressed. |
-| Incompatible version | Check Harness is `0.2.1-rc.5`. Do not bypass the compatibility check. |
+| Incompatible version | Check Harness is `0.2.2-rc.3`. Do not bypass the compatibility check. |
 | Installed in CLI but absent in App | CLI `web` and App `desktop` are separate profiles. Install through the App's Plugins page. |
 | `Could not enable` / `failed to import` immediately after installation | Check the exact Host/package versions and the failing component diagnostic. The old rc.2 bare-name resolution workaround is no longer used. Then check that the component list shows four running and one off. |
 | No DSH-SLOP settings section, or a tab is missing | Check SLOP is enabled in that profile, then restart Harness and open a new Chat. |

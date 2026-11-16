@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { jsonSchemaToTs, validateJsonSchemaValue, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { jsonSchemaToTs } from '@deepseek-ai/dsh-tool-executor-ptc'
+import { validateJsonSchemaValue, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { QueueMonitor, QueueService } from '@dsh-slop/queue'
 import { describe, expect, it, vi } from 'vitest'
 import { registerQueueTools } from '../src/queue-tools.ts'
@@ -16,7 +17,7 @@ function execution(sessionId = 'session-zns') {
   return {
     agent: {
       id: sessionId,
-      ctx: { sessionProjections: { stateOf: () => 'standard' } },
+      ctx: { get: (name: string) => name === 'agentPresets' ? { presetForSession: () => 'standard' } : undefined },
       session: {
         id: sessionId,
         header: { cwd: '/work/project', agentPreset: 'standard' },

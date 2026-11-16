@@ -43,6 +43,7 @@ function renderCard(input: unknown = {}, composer: ComposerStateOverride = {}) {
     pruneAttachments: vi.fn(),
     captureInsertion: vi.fn(),
     insertText: vi.fn(),
+    insertQuote: vi.fn(() => true),
   }
   const useInput: SetupMachineCardProps['useInput'] = selector => selector({
     draft: composer.draft ?? '',

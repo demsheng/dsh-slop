@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Message } from '@deepseek-ai/dsh-llm'
-import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
+import type { ProjectionDefinition, ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import type {} from './queue-runtime.ts'
 import { z } from 'zod'
 
@@ -11,16 +11,14 @@ const stateSchema = z.object({
   messageIds: z.record(z.string(), z.string()),
   receipts: z.record(z.string(), z.enum(['enqueued', 'claimed', 'consumed', 'discarded'])),
 }).strict()
-type DeliveryProjection = z.output<typeof stateSchema>
-declare module '@deepseek-ai/dsh-session-projection/types' {
-  interface SessionProjectionStateMap { slopQueueDelivery: DeliveryProjection }
-}
+/** Host-only unit state; no client view, so it stays out of `SessionProjectionMap`. */
+export type DeliveryProjection = z.output<typeof stateSchema>
 function dispatchOf(message: Message): string | undefined {
   return message.source.kind === 'dsh-slop-queue' ? message.source.dispatchId : undefined
 }
 
 /** Native events own consumption and cancellation. This fold adds only Queue's receipt index. */
-export const queueDeliveryProjection: ProjectionDefinition<'slopQueueDelivery'> = {
+export const queueDeliveryProjection: ProjectionDefinition<'slopQueueDelivery', DeliveryProjection> = {
   key: 'slopQueueDelivery', stateVersion: 2, stateSchema,
   init: () => ({ 'next-turn': [], 'next-step': [], receipts: {}, messageIds: {} }),
   apply(state, event) {
@@ -43,4 +41,7 @@ export const queueDeliveryProjection: ProjectionDefinition<'slopQueueDelivery'> 
     return { ...state, [splice.target]: list, receipts, messageIds }
   },
 }
-export function registerQueueDeliveryProjection(ctx: Context): () => void { return ctx.sessionProjections.register(queueDeliveryProjection) }
+/** Registration is asynchronous; the caller reads receipts through the returned handle. */
+export async function registerQueueDeliveryProjection(ctx: Context): Promise<ProjectionHandle<DeliveryProjection>> {
+  return ctx.sessionProjections.register(queueDeliveryProjection)
+}

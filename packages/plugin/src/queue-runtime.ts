@@ -1,11 +1,11 @@
-import type {} from './queue-delivery-projection.ts'
+import type { DeliveryProjection } from './queue-delivery-projection.ts'
 import { createHash } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentHandle, AgentOptions } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type {} from '@deepseek-ai/dsh-api-session-controller'
 import { boundContextSummary, createUserMessage, type ContextFormed, type Message } from '@deepseek-ai/dsh-llm'
-import type {} from '@deepseek-ai/dsh-session-projection'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { SessionId, type UserMessage } from '@deepseek-ai/dsh-session'
 import type { SubagentActivation } from '@deepseek-ai/dsh-subagent'
 import { queueWorkerPreset } from './queue-worker-preset.js'
@@ -100,13 +100,12 @@ function isQueueDeliveryMessage(message: Message, text: string): boolean {
 type DispatchReceipt = { state: 'absent' | 'claimed' | 'consumed' | 'discarded'; messageId?: string } | { state: 'enqueued'; message: UserMessage }
 
 /** Read durable native events as well as the live Inbox: a removed input stays removed. */
-function inspectDispatch(agent: Agent, dispatchId: string, text: string): DispatchReceipt {
+function inspectDispatch(agent: Agent, dispatchId: string, text: string, delivery: ProjectionHandle<DeliveryProjection>): DispatchReceipt {
   const matches = (message: Message): boolean => (message.source.kind === 'dsh-slop-queue' && message.source.dispatchId === dispatchId) || isQueueDeliveryMessage(message, text)
   const pending = [...agent.inbox.nextTurn, ...agent.inbox.nextStep].find(matches)
   if (pending !== undefined) return { state: 'enqueued', message: pending }
   if (agent.session.deriveMessages().some(matches)) return { state: 'consumed' }
-  const state = agent.ctx.sessionProjections.stateOf(agent.session, 'slopQueueDelivery')
-  if (state === undefined) throw new Error('Queue delivery receipt projection is unavailable')
+  const state = delivery.stateOf(agent.session)
   const receipt = state.receipts[dispatchId]
   if (receipt === 'enqueued') throw new Error('Queue receipt and native Inbox disagree')
   return { state: receipt ?? 'absent', ...(state.messageIds[dispatchId] === undefined ? {} : { messageId: state.messageIds[dispatchId] }) }
@@ -118,7 +117,11 @@ export function queueSessionTargetForAgent(agent: Agent): QueueSessionTarget {
   if (typeof cwd !== 'string' || cwd.length === 0) {
     throw new Error('Queue ownership requires the current Chat to have a durable cwd')
   }
-  const agentPreset = agent.ctx.sessionProjections.stateOf(agent.session, 'agentPreset') ?? undefined
+  // The Agent's own context declares no injection, so a typed property read is
+  // rejected; the reflective lookup is the documented cross-context read.
+  const agentPresets = agent.ctx.get('agentPresets')
+  if (agentPresets === undefined) throw new Error('Queue ownership requires the Agent preset service')
+  const agentPreset = agentPresets.presetForSession(agent.session) ?? undefined
   if (agentPreset === undefined) {
     throw new Error('Queue ownership requires the current Chat to have a durable Agent preset')
   }
@@ -152,7 +155,13 @@ export class DshQueueRuntime implements QueueQueryWorkerPort, QueueChatDeliveryP
   private readonly attemptedDispatches = new Set<string>()
 
   /** `fallbackAgentOptions` is read at each fallback check, so Settings edits apply without a restart. */
-  constructor(private readonly ctx: Context, private readonly options: { readonly fallbackAgentOptions?: () => AgentOptions | undefined } = {}) {}
+  constructor(
+    private readonly ctx: Context,
+    private readonly options: {
+      readonly deliveryProjection: ProjectionHandle<DeliveryProjection>
+      readonly fallbackAgentOptions?: () => AgentOptions | undefined
+    },
+  ) {}
 
   /** Snapshot before native signal shutdown clears Inbox as a generic cancellation. */
   pendingAtShutdown(): { dispatchId: string; messageId: string }[] {
@@ -181,14 +190,12 @@ export class DshQueueRuntime implements QueueQueryWorkerPort, QueueChatDeliveryP
         delivery: 'caller',
         label: `Queue check: ${request.observerKind} (${String(request.items.length)})`,
         signal: this.abortController.signal,
-        request: {
-          prompt: [{ type: 'text', text: request.prompt }],
-          parent,
-          ...(agentOptions === undefined ? {} : { agentOptions }),
-          cwd: request.parent.cwd,
-          outputSchema: OBSERVATION_OUTPUT_SCHEMA,
-          agentPreset: queueWorkerPreset(request.target.kind),
-        },
+        prompt: [{ type: 'text', text: request.prompt }],
+        parent,
+        ...(agentOptions === undefined ? {} : { agentOptions }),
+        cwd: request.parent.cwd,
+        outputSchema: OBSERVATION_OUTPUT_SCHEMA,
+        agentPreset: queueWorkerPreset(request.target.kind),
       })
       this.abortController.signal.addEventListener('abort', cancel, { once: true })
       if (this.abortController.signal.aborted) cancel()
@@ -224,7 +231,7 @@ export class DshQueueRuntime implements QueueQueryWorkerPort, QueueChatDeliveryP
       content: [{ type: 'text', text }],
     })
     if (request.delivery === 'wake') {
-      let receipt = inspectDispatch(agent, dispatchId, text)
+      let receipt = inspectDispatch(agent, dispatchId, text, this.options.deliveryProjection)
       if (receipt.state === 'absent' || (receipt.state === 'discarded' && request.shutdownMessageId !== undefined && receipt.messageId === request.shutdownMessageId)) {
         this.attemptedDispatches.add(dispatchId)
         agent.followup(message)
@@ -236,7 +243,7 @@ export class DshQueueRuntime implements QueueQueryWorkerPort, QueueChatDeliveryP
         agent.followup(receipt.state === 'enqueued' && request.shutdownMessageId === undefined ? receipt.message : message)
       }
       if (!await this.ctx.sessions.flush(agent.session)) throw new Error('Queue delivery has no active Session durability listener')
-      receipt = inspectDispatch(agent, dispatchId, text)
+      receipt = inspectDispatch(agent, dispatchId, text, this.options.deliveryProjection)
       if (receipt.state === 'absent') throw new Error('Queue continuation was not persisted in the native Inbox or Session')
       return { state: receipt.state === 'claimed' ? 'enqueued' : receipt.state }
     }

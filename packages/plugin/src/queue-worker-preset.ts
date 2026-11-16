@@ -10,7 +10,9 @@ export function apply(ctx: Context, config: Config): void {
   // Creation listeners finish before the first turn. Apply at the Agent layer,
   // where preset tools are inherited and can be restricted by their names.
   ctx.on('agent/created', ({ agent }) => {
-    agent.ctx.tools.restrict({ allow: config.target === 'machine' ? ['slop_machine_shell'] : ['bash'] })
+    const tools = agent.ctx.get('tools')
+    if (tools === undefined) throw new Error('Queue worker preset requires a tools service')
+    tools.restrict({ allow: config.target === 'machine' ? ['slop_machine_shell'] : ['bash'] })
   })
 }
 

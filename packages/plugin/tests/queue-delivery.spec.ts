@@ -11,7 +11,7 @@ import { DshQueueRuntime, queueSessionTargetForAgent } from '../src/queue-runtim
 
 async function fixture(delivery: 'notify' | 'wake') {
   const directory = await mkdtemp(join(tmpdir(), 'slop-queue-delivery-'))
-  const { ctx: host, agent: live } = await nativeAgentFixture(directory)
+  const { ctx: host, agent: live, deliveryProjection } = await nativeAgentFixture(directory)
   const session = live.session
   vi.spyOn(live, 'followup')
   let release!: () => void
@@ -25,7 +25,7 @@ async function fixture(delivery: 'notify' | 'wake') {
   await host.plugin({
     name: 'queue-delivery-in-host-scope',
     inject: hostDependencies,
-    apply(ctx: Context) { runtime = new DshQueueRuntime(ctx) },
+    apply(ctx: Context) { runtime = new DshQueueRuntime(ctx, { deliveryProjection }) },
   })
   if (runtime === undefined) throw new Error('Queue runtime did not mount')
   const store = new SqliteQueueStore(join(directory, 'queue.sqlite'))

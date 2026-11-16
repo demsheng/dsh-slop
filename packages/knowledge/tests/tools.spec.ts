@@ -1,9 +1,9 @@
 import {
   defineTool,
-  jsonSchemaToTs,
   type JsonValue,
   type ToolDefinition,
 } from '@deepseek-ai/dsh-tools'
+import { jsonSchemaToTs } from '@deepseek-ai/dsh-tool-executor-ptc'
 import { describe, expect, it, vi } from 'vitest'
 import { KnowledgeError } from '../src/errors.js'
 import { HarnessError } from '@deepseek-ai/dsh-llm'

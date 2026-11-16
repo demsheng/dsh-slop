@@ -115,7 +115,7 @@ try {
   const manifest = {
     name: 'dsh-slop', version: bundle.manifest.version, description: 'Machine, Knowledge and Queue for DeepSeek Harness.',
     license: 'MIT', type: 'module', engines: { ...(await readJson(join(root, 'package.json'))).engines, ...bundle.manifest.engines },
-    repository: { type: 'git', url: 'git+https://github.com/zrzrv5/dsh-slop.git' },
+    repository: { type: 'git', url: 'git+https://github.com/demsheng/dsh-slop.git' },
     exports: bundle.manifest.exports, files: ['cordis.patch.yml', 'locale', 'INSTALL.md', 'README.zh-CN.md'], dsh: bundle.manifest.dsh,
     dependencies: { ...dependencies, ...Object.fromEntries([...bundled].map(([name, entry]) => [name, entry.manifest.version])) },
     peerDependencies: peers, bundledDependencies: [...bundled.keys(), ...nativeSshPackages.keys()],

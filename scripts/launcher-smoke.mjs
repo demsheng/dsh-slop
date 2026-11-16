@@ -9,6 +9,15 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const temporary = await mkdtemp(join(tmpdir(), 'slop launcher smoke '))
+/** Windows releases a killed Host's SQLite handles slightly later; retry only that lock. */
+async function removeTemporary(directory) {
+  for (let attempt = 0; ; attempt++) {
+    try { await rm(directory, { recursive: true, force: true }); return } catch (error) {
+      if (attempt >= 40 || error?.code !== 'EBUSY') throw error
+      await delay(250)
+    }
+  }
+}
 try {
   // Test-only endpoint reads the exact release's public plugin inventory API.
   const fixture = join(temporary, 'inventory.mjs')
@@ -110,5 +119,5 @@ export function apply(ctx) {
     }
   }
 } finally {
-  await rm(temporary, { recursive: true, force: true })
+  await removeTemporary(temporary)
 }

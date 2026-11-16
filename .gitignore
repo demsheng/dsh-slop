@@ -2,6 +2,8 @@ node_modules/
 dist/
 lib/
 coverage/
+.pnpm-store/
+.tmp-bin/
 .DS_Store
 *.tsbuildinfo
 *.db

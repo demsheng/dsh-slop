@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import { Context } from '@deepseek-ai/cordis'
 import { SystemPrompt } from '@deepseek-ai/dsh-system-prompt'
 import { ToolRuntime } from '@deepseek-ai/dsh-tools'
+import * as nativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { QueueService, SqliteQueueStore, type QueueCallbackEvent } from '@dsh-slop/queue'
 import { QueueWebhook } from '../src/queue-webhook.ts'
@@ -59,6 +60,7 @@ describe('optional Queue webhook ingress',()=>{
     const ctx=new Context()
     await ctx.plugin(SystemPrompt,{includeHarnessIdentity:false})
     await ctx.plugin(ToolRuntime)
+    await ctx.plugin(nativeToolExecutor)
     const dispose=registerQueueWebhookIntegration(ctx,f.webhook)
     cleanup.push(async()=>{dispose();await ctx.fiber.dispose()})
     expect(ctx.tools.schemas().map(tool=>tool.name)).toContain('slop_queue_prepare')
